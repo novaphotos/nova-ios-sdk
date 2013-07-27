@@ -1,8 +1,9 @@
-noon-ios-sdk
+Noon iOS SDK
 ============
 
-Official IOS SDK for Noon. 
+Official iOS SDK for Noon. 
 
 Coming soon. Watch this repository for updates.
 
-https://getnoon.com/developers/
+https://getnoon.com/
+https://getnoon.com/sdk/
