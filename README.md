@@ -1,10 +1,10 @@
-Noon iOS SDK
+Nova iOS SDK
 ============
 
-Official iOS SDK for Noon. 
+Official iOS SDK for Nova.
 
 Coming soon. Watch this repository for updates.
 
-https://getnoon.com/
+https://wantnova.com/
 
-https://getnoon.com/sdk/
+https://wantnova.com/sdk/
