@@ -49,14 +49,34 @@ both the iPhone and Nova:
 
 ### Monitoring connection status
 
-TODO
+You can read the status of `flashService.status` at any time.
+
+Alternatively, you can observe when the status changes:
+
+```objective-c
+[flashService observeStatus:^ (NVFlashServiceStatus status) {
+  ...
+}];
+```
+The enum values of `NVFlashServiceStatus` are:
+
+``` 
+NVFlashServiceDisabled     // BluetoothLE is not available on this device.
+NVFlashServiceDisconnected // No devices are connected and nothing is being scanned for.
+NVFlashServiceScanning     // No devices are connected, but we're currently scanning for some.
+NVFlashServiceConnecting   // Device(s) found and attempting to establish a connection.
+NVFlashServiceHandshaking  // BluetoothLE connection to device has been established. Performing final handshake.
+NVFlashServiceReady        // Connection to device is ready and waiting for flashes. Yay.
+NVFlashServiceBusy         // Connection to device is established, but the device is currently busy.
+```
+
+Basically, `NVFlashServiceReady` is the good one.
 
 
-### Choosing the flash temperature/brightness settings.
+### Choosing the flash temperature/brightness settings
 
 ```objective-c
 NVFlashSettings *flashSettings = NVFlashSettingsWarm();
-
                            // or NVFlashSettingsGentle()
                            // or NVFlashSettingsFull()
                            // or NVFlashSettingsCustom(brightness, colorTemp)
@@ -68,10 +88,13 @@ Because there can be slight (and hard to predict) latencies in Bluetooth
 and also in the iPhone camera shutter time, the sequence is coordinated
 by a sequence of callbacks.
 
+Triggering a flash should only be attempted when `flashService.status == NVFlashServiceReady`.
+
 ```objective-c
 
 // Step 1: Tell flash to activate.
 [flashService beginFlash:flashSettings withCallback:^ (BOOL success) {
+
   // Step 2: This callback is called when the flash has acknowledged that
   //         it is lit.
 
@@ -83,6 +106,7 @@ by a sequence of callbacks.
 
       // Step 4: When photo has been captured, turn the flash off.
       [flashService:endFlash];
+
     })];
 
   } else {
