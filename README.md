@@ -3,7 +3,7 @@ Nova iOS SDK
 
 Official iOS SDK for Nova.
 
-Coming soon. Watch this repository for updates.
+**Note: This is a work in progress - the API has been designed but the underlying implementation is not functional yet.**
 
 https://wantnova.com/
 
