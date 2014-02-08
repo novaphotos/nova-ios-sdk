@@ -27,17 +27,20 @@
 @private
     uint8_t warm_;
     uint8_t cool_;
+    uint16_t duration_;
 }
 
 @property (readonly) uint8_t warm;
 @property (readonly) uint8_t cool;
+@property (readonly) uint16_t duration;
 
-- (id) initWithWarm:(uint8_t)warm cool:(uint8_t)cool;
+- (id) initWithWarm:(uint8_t)warm cool:(uint8_t)cool duration:(uint16_t)duration;
 
 + (NVFlashSettings *)off;
 + (NVFlashSettings *)gentle;
 + (NVFlashSettings *)warm;
 + (NVFlashSettings *)bright;
 + (NVFlashSettings *)customWarm:(uint8_t)warm cool:(uint8_t)cool;
++ (NVFlashSettings *)customWarm:(uint8_t)warm cool:(uint8_t)cool duration:(uint16_t)duration;
 
 @end
