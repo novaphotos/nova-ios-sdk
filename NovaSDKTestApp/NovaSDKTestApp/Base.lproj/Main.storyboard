@@ -13,7 +13,7 @@
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                         <subviews>
                             <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" editable="NO" id="gNV-GT-oci" userLabel="Log">
-                                <rect key="frame" x="2" y="162" width="320" height="286"/>
+                                <rect key="frame" x="2" y="172" width="320" height="276"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="calibratedRGB"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="11"/>
@@ -82,13 +82,14 @@
                                 </connections>
                             </button>
                             <segmentedControl opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="top" segmentControlStyle="plain" selectedSegmentIndex="0" id="oFB-qo-4iM" userLabel="FlashPresets">
-                                <rect key="frame" x="10" y="131" width="299" height="29"/>
+                                <rect key="frame" x="11" y="131" width="302" height="29"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <segments>
                                     <segment title="Off"/>
                                     <segment title="Gentle"/>
                                     <segment title="Warm"/>
                                     <segment title="Bright"/>
+                                    <segment title="Custom"/>
                                 </segments>
                                 <connections>
                                     <action selector="changeFlashPreset:" destination="vXZ-lx-hvc" eventType="valueChanged" id="HLl-db-dng"/>

@@ -22,19 +22,33 @@
 {
     [super viewDidLoad];
     [self logFrom:@"App" msg:@"Launched"];
-    status.text = @"Ready";
-}
-
-// Called by AppDelegate on applicationWillResignActive
-- (void)appSleep
-{
-    [self logFrom:@"App" msg:@"Sleep"];
+    
+    flashService = [NVFlashService new];
+    
+    // Defaults
+    
+    flashSettings = [NVFlashSettings warm];
+    flashPresets.selectedSegmentIndex = 2;
+    
+    flashService.autoPairMode = NVAutoPairClosest;
+    pairMode.selectedSegmentIndex = 1;
+    
+    // TODO: Need to be notified when this changes.
+    [self showFlashServiceStatus:NVFlashServiceDisabled];
 }
 
 // Called by AppDelegate on applicationWillBecomeActive
 - (void)appWake
 {
     [self logFrom:@"App" msg:@"Wake"];
+    [flashService enable];
+}
+
+// Called by AppDelegate on applicationWillResignActive
+- (void)appSleep
+{
+    [self logFrom:@"App" msg:@"Sleep"];
+    [flashService disable];
 }
 
 
@@ -44,28 +58,36 @@
 - (IBAction)tapEnable:(id)sender
 {
     [self logFrom:@"User" msg:@"Enable"];
+    [flashService enable];
 }
 
 // Called when user taps 'disable'
 - (IBAction)tapDisable:(id)sender
 {
     [self logFrom:@"User" msg:@"Disable"];
+    [flashService disable];
 }
 
 // Called when user changes pairing mode
 - (IBAction)changePairMode:(id)sender
 {
-    NSString *modeText = @"???";
+    NSString *modeText;
     switch (pairMode.selectedSegmentIndex) {
         case 0:
             modeText = @"None";
+            flashService.autoPairMode = NVAutoPairNone;
             break;
         case 1:
             modeText = @"Closest";
+            flashService.autoPairMode = NVAutoPairClosest;
             break;
         case 2:
             modeText = @"All";
+            flashService.autoPairMode = NVAutoPairAll;
             break;
+        default:
+            [self panic:@"changePairMode invalid value"];
+            return;
     }
     [self logFrom:@"User" msg:[@"Change pair mode: " stringByAppendingString:modeText]];
 }
@@ -74,26 +96,38 @@
 - (IBAction)tapRefresh:(id)sender
 {
     [self logFrom:@"User" msg:@"Refresh"];
+    [flashService refresh];
 }
 
 // Called when user changes chooses a new flash segment
 - (IBAction)changeFlashPreset:(id)sender
 {
-    // TODO: Support custom flash settings.
-    NSString *presetText = @"???";
+    NSString *presetText;
     switch (pairMode.selectedSegmentIndex) {
         case 0:
             presetText = @"Off";
+            flashSettings = [NVFlashSettings off];
             break;
         case 1:
             presetText = @"Gentle";
+            flashSettings = [NVFlashSettings gentle];
             break;
         case 2:
             presetText = @"Warm";
+            flashSettings = [NVFlashSettings warm];
             break;
         case 3:
             presetText = @"Bright";
+            flashSettings = [NVFlashSettings bright];
             break;
+        case 4:
+            presetText = @"Custom";
+            // TODO: Allow user to enter these values.
+            flashSettings = [NVFlashSettings customWarm:100 cool:100];
+            break;
+        default:
+            [self panic:@"changeFlashPreset invalid value"];
+            return;
     }
     [self logFrom:@"User" msg:[@"Change flash preset: " stringByAppendingString:presetText]];
 }
@@ -101,14 +135,21 @@
 // Called when user presses flash button down
 - (IBAction)flashButtonDown:(id)sender
 {
-    // TODO: Allow user to specify timeout.
-    [self logFrom:@"User" msg:@"Flash button down" ];
+    [self logFrom:@"User" msg:@"Flash button down"];
+    
+    [flashService beginFlash:flashSettings withCallback:^ (BOOL success) {
+        [self logFrom:@"Nova" msg:(success ? @"Flash activated" : @"Flash FAILED to activate")];
+    }];
 }
 
 // Called when user releases flash button
 - (IBAction)flashButtonUp:(id)sender
 {
     [self logFrom:@"User" msg:@"Flash button up"];
+
+    [flashService endFlashWithCallback:^ (BOOL success) {
+        [self logFrom:@"Nova" msg:(success ? @"Flash deactivated" : @"Flash FAILED to deactivate")];
+    }];
 }
 
 
@@ -124,8 +165,50 @@
     [self scrollToEnd:log];
 }
 
+- (void)showFlashServiceStatus:(NVFlashServiceStatus) serviceStatus
+{
+    switch (serviceStatus) {
+        case NVFlashServiceDisabled:
+            status.text = @"Disabled";
+            status.textColor = [UIColor redColor];
+            break;
+        case NVFlashServiceDisconnected:
+            status.text = @"Disconnected";
+            status.textColor = [UIColor redColor];
+            break;
+        case NVFlashServiceScanning:
+            status.text = @"Scanning...";
+            status.textColor = [UIColor orangeColor];
+            break;
+        case NVFlashServiceConnecting:
+            status.text = @"Connecting...";
+            status.textColor = [UIColor blueColor];
+            break;
+        case NVFlashServiceHandshaking:
+            status.text = @"Handshaking...";
+            status.textColor = [UIColor blueColor];
+            break;
+        case NVFlashServiceReady:
+            status.text = @"Ready";
+            status.textColor = [UIColor greenColor];
+            break;
+        case NVFlashServiceBusy:
+            status.text = @"Busy";
+            status.textColor = [UIColor blueColor];
+            break;
+        default:
+            [self panic:@"Invalid service status"];
+    }
+}
 
 #pragma mark Utils
+
+// Something bad happened.
+- (void)panic:(NSString *) msg
+{
+    NSLog(@"PANIC: %@", msg);
+    exit(1);
+}
 
 // Return the time as a string. e.g. "3:22.15PM"
 - (NSString *)timestamp

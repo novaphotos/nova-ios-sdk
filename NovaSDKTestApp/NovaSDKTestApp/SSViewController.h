@@ -7,6 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "../../NovaSDK/NVFlashService.h"
 
 @interface SSViewController : UIViewController
 {
@@ -21,6 +22,9 @@
     IBOutlet UIButton *flash;
 
     IBOutlet UITextView *log;
+    
+    NVFlashService *flashService;
+    NVFlashSettings *flashSettings;
 }
 
 - (void)appSleep;
