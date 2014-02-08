@@ -461,6 +461,7 @@
 				12BEB86018A6925800F75D5C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		12BEB86118A6925800F75D5C /* Build configuration list for PBXNativeTarget "NovaSDKTestAppTests" */ = {
 			isa = XCConfigurationList;
@@ -469,6 +470,7 @@
 				12BEB86318A6925800F75D5C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
