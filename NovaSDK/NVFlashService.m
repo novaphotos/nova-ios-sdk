@@ -39,29 +39,24 @@
     // TODO
 }
 
-- (BOOL) beginFlash:(NVFlashSettings*)settings
+- (void) beginFlash:(NVFlashSettings*)settings
 {
     // TODO
-    return NO;
 }
 
-- (BOOL) beginFlash:(NVFlashSettings*)settings
-       withCallback:(NVTriggerCallback)callback
+- (void) beginFlash:(NVFlashSettings*)settings withCallback:(NVTriggerCallback)callback
 {
     // TODO
-    return NO;
 }
 
-- (BOOL) endFlash
+- (void) endFlash
 {
     // TODO
-    return NO;
 }
 
-- (BOOL) endFlashWithCallback:(NVTriggerCallback)callback
+- (void) endFlashWithCallback:(NVTriggerCallback)callback
 {
     // TODO
-    return NO;
 }
 
 @end

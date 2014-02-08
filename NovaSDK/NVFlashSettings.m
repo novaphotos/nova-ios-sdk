@@ -20,20 +20,42 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#import <Foundation/Foundation.h>
 #import "NVFlashSettings.h"
 
-typedef void (^NVTriggerCallback)(BOOL);
+@implementation NVFlashSettings
 
-@protocol NVTriggerFlash <NSObject>
+- (id) initWithWarm:(uint8_t)warm cool:(uint8_t)cool
+{
+    self = [super init];
+    if (self) {
+        warm_ = warm;
+        cool_ = cool;
+    }
+    return self;
+}
 
-- (void) beginFlash:(NVFlashSettings*)settings;
++ (NVFlashSettings *)off
+{
+    return [[NVFlashSettings alloc] initWithWarm:0 cool:0];
+}
 
-- (void) beginFlash:(NVFlashSettings*)settings withCallback:(NVTriggerCallback)callback;
++ (NVFlashSettings *)gentle
+{
+    return [[NVFlashSettings alloc] initWithWarm:127 cool:0];
+}
 
-- (void) endFlash;
++ (NVFlashSettings *)warm
+{
+    return [[NVFlashSettings alloc] initWithWarm:255 cool:20];
+}
 
-- (void) endFlashWithCallback:(NVTriggerCallback)callback;
++ (NVFlashSettings *)bright
+{
+    return [[NVFlashSettings alloc] initWithWarm:255 cool:255];
+}
 
++ (NVFlashSettings *)customWarm:(uint8_t)warm cool:(uint8_t)cool
+{
+    return [[NVFlashSettings alloc] initWithWarm:warm cool:cool];
+}
 @end
-

@@ -23,6 +23,21 @@
 #import <Foundation/Foundation.h>
 
 @interface NVFlashSettings : NSObject
+{
+@private
+    uint8_t warm_;
+    uint8_t cool_;
+}
+
 @property (readonly) uint8_t warm;
 @property (readonly) uint8_t cool;
+
+- (id) initWithWarm:(uint8_t)warm cool:(uint8_t)cool;
+
++ (NVFlashSettings *)off;
++ (NVFlashSettings *)gentle;
++ (NVFlashSettings *)warm;
++ (NVFlashSettings *)bright;
++ (NVFlashSettings *)customWarm:(uint8_t)warm cool:(uint8_t)cool;
+
 @end
