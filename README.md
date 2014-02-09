@@ -3,11 +3,13 @@ Nova iOS SDK
 
 Official iOS SDK for Nova.
 
-Coming soon. Watch this repository for updates.
+http://www.kickstarter.com/projects/joewalnes/nova-a-slim-wireless-flash-for-better-iphone-photo
 
 https://wantnova.com/
 
 https://wantnova.com/sdk/
+
+-@joewalnes
 
 
 Usage
@@ -22,7 +24,7 @@ Initialize the Nova flash service. A good time to do this is in `applicationDidF
 
 // Setup. Do this when app starts.
 // A good time is applicationDidFinishLaunching:
-NVFlashService *flashService = [[NVFlashService alloc] init];
+NVFlashService *flashService = [NVFlashService new];
 
 // Set which Nova devices to automatically pair with.
 // Options: NVAutoPairClosest, NVAutoPairAll or NVAutoPairNone.
@@ -51,7 +53,8 @@ both the iPhone and Nova:
 
 You can read the status of `flashService.status` at any time.
 
-Alternatively, you can observe when the status changes:
+You can observe when the status changes, using standard Objective-C key-value-observing,
+or this convenience method:
 
 ```objective-c
 [flashService observeStatus:^ (NVFlashServiceStatus status) {
@@ -62,12 +65,10 @@ The enum values of `NVFlashServiceStatus` are:
 
 ``` 
 NVFlashServiceDisabled     // BluetoothLE is not available on this device.
-NVFlashServiceDisconnected // No devices are connected and nothing is being scanned for.
+NVFlashServiceIdle         // No devices are connected, we will scan for some soon.
 NVFlashServiceScanning     // No devices are connected, but we're currently scanning for some.
 NVFlashServiceConnecting   // Device(s) found and attempting to establish a connection.
-NVFlashServiceHandshaking  // BluetoothLE connection to device has been established. Performing final handshake.
 NVFlashServiceReady        // Connection to device is ready and waiting for flashes. Yay.
-NVFlashServiceBusy         // Connection to device is established, but the device is currently busy.
 ```
 
 Basically, `NVFlashServiceReady` is the good one.
@@ -76,10 +77,8 @@ Basically, `NVFlashServiceReady` is the good one.
 ### Choosing the flash temperature/brightness settings
 
 ```objective-c
-NVFlashSettings *flashSettings = NVFlashSettingsWarm();
-                           // or NVFlashSettingsGentle()
-                           // or NVFlashSettingsFull()
-                           // or NVFlashSettingsCustom(brightness, colorTemp)
+NVFlashSettings *flashSettings = [NVFlashSettings warm];
+                                               // or off, gentle, bright, custom...
 ```
 
 ### Trigger the flash
