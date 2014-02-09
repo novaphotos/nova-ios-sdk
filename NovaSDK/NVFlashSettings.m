@@ -24,16 +24,21 @@
 
 double const NV_DEFAULT_FLASH_TIMEOUT = 500;
 
+@interface NVFlashSettings()
+@property uint8_t warm;
+@property uint8_t cool;
+@property uint16_t timeout;
+@end
+
 @implementation NVFlashSettings
 
 - (id) initWithWarm:(uint8_t)warm cool:(uint8_t)cool timeout:(uint16_t)timeout;
 {
-    // TOOD: Verify properties work
     self = [super init];
     if (self) {
-        warm_ = warm;
-        cool_ = cool;
-        timeout_ = timeout;
+        self.warm = warm;
+        self.cool = cool;
+        self.timeout = timeout;
     }
     return self;
 }

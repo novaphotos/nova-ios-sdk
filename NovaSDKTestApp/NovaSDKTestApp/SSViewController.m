@@ -202,6 +202,8 @@
             [self panic:@"Invalid service status"];
     }
     [self logFrom:@"Nova" msg:[@"Status changed: " stringByAppendingString:status.text]];
+    
+    flash.enabled = serviceStatus == NVFlashServiceReady;
 }
 
 #pragma mark Utils

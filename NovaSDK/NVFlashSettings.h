@@ -25,12 +25,6 @@
 extern double const NV_DEFAULT_FLASH_TIMEOUT;
 
 @interface NVFlashSettings : NSObject
-{
-@private
-    uint8_t warm_;
-    uint8_t cool_;
-    uint16_t timeout_;
-}
 
 // Set intensity of warm LEDs. Any value from 0-255, where 0=off and 255=max.
 @property (readonly) uint8_t warm;

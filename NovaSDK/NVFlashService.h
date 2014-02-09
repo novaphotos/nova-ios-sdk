@@ -40,6 +40,8 @@ typedef NS_ENUM(NSInteger, NVAutoPairMode)
     CBCentralManager *central;
     CBPeripheral *strongestSignalPeripheral;
     CBPeripheral *activePeripheral;
+    CBCharacteristic *requestCharacteristic;
+    CBCharacteristic *responseCharacteristic;
     NSNumber *strongestSignalRSSI;
     NSTimer *startScanTimer;
     NSTimer *stopScanTimer;

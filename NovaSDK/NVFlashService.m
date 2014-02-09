@@ -30,7 +30,8 @@
 
 
 static NSString* const kServiceUUID = @"FFF0";
-static NSString* const kCharacteristicUUID = @"FFF3";
+static NSString* const kRequestCharacteristicUUID = @"FFF3";
+static NSString* const kResponseCharacteristicUUID = @"FFF4";
 
 static NSTimeInterval const scanInterval = 1; // How long between scans, in seconds.
 static NSTimeInterval const scanDuration = 0.5; // How long to scan for, in seconds.
@@ -100,10 +101,7 @@ static NSTimeInterval const scanDuration = 0.5; // How long to scan for, in seco
     startScanTimer = nil;
     stopScanTimer = nil;
 
-    if (activePeripheral != nil) {
-        [central cancelPeripheralConnection:activePeripheral];
-        activePeripheral = nil;
-    }
+    [self disconnect];
 
     // TODO: Abort commands in progress
     self.status = NVFlashServiceDisabled;
@@ -176,7 +174,6 @@ static NSTimeInterval const scanDuration = 0.5; // How long to scan for, in seco
 }
 
 // Periodicaly called by timer, sometime after startScan.
-//
 - (void)stopScan
 {
     [central stopScan];
@@ -222,8 +219,7 @@ didFailToConnectPeripheral:(CBPeripheral *)peripheral
         return;
     }
 
-    activePeripheral = nil;
-    self.status = NVFlashServiceIdle;
+    [self disconnect];
 }
 
 // Callback from [CBCentralManager connectPeripheral:options:]
@@ -248,8 +244,7 @@ didDisconnectPeripheral:(CBPeripheral *)peripheral
         return;
     }
     
-    activePeripheral = nil;
-    self.status = NVFlashServiceIdle;
+    [self disconnect];
 }
 
 // Callback from [CBPeripheral discoverServices:]
@@ -261,8 +256,7 @@ didDiscoverServices:(NSError *)error
     }
 
     if (error) {
-        self.status = NVFlashServiceIdle;
-        activePeripheral = nil;
+        [self disconnect];
         return;
     }
     
@@ -271,13 +265,14 @@ didDiscoverServices:(NSError *)error
             // Found our service
             // Discovers the characteristics for the service
             // Calls [self peripheral:didDiscoverCharacteristicsForService:error:]
-            [peripheral discoverCharacteristics:@[[CBUUID UUIDWithString:kCharacteristicUUID]] forService:service];
+            NSArray *characteristics = @[[CBUUID UUIDWithString:kRequestCharacteristicUUID],
+                                         [CBUUID UUIDWithString:kResponseCharacteristicUUID]];
+            [peripheral discoverCharacteristics:characteristics forService:service];
             return;
         }
     }
     
-    self.status = NVFlashServiceIdle;
-    activePeripheral = nil;
+    [self disconnect];
 }
 
 // Callback from [CBPeripheral discoverCharacteristics:forService]
@@ -290,24 +285,40 @@ didDiscoverCharacteristicsForService:(CBService *)service
     }
 
     if (error) {
-        self.status = NVFlashServiceIdle;
-        activePeripheral = nil;
+        [self disconnect];
         return;
     }
     
     for (CBCharacteristic* characteristic in service.characteristics) {
-        if ([characteristic.UUID isEqual:[CBUUID UUIDWithString:kCharacteristicUUID]]) {
-            // Found our characteristic
-            // Yay. We're all set to start using the device.
-            self.status = NVFlashServiceReady;
-            return;
+        if ([characteristic.UUID isEqual:[CBUUID UUIDWithString:kRequestCharacteristicUUID]]) {
+            requestCharacteristic = characteristic;
+        }
+        if ([characteristic.UUID isEqual:[CBUUID UUIDWithString:kResponseCharacteristicUUID]]) {
+            responseCharacteristic = characteristic;
         }
     }
 
-    self.status = NVFlashServiceIdle;
-    activePeripheral = nil;
+    if (requestCharacteristic != nil && responseCharacteristic != nil) {
+        // All set. We're now ready to send commands to the device.
+        self.status = NVFlashServiceReady;
+    } else {
+        // Characteristics not found. Abort.
+        [self disconnect];
+    }
 }
 
+- (void) disconnect
+{
+    if (activePeripheral != nil) {
+        [central cancelPeripheralConnection:activePeripheral];
+    }
+    
+    activePeripheral = nil;
+    requestCharacteristic = nil;
+    responseCharacteristic = nil;
+
+    self.status = NVFlashServiceIdle;
+}
 
 #pragma mark NVTriggerFlash flash control implementation
 
@@ -318,13 +329,28 @@ didDiscoverCharacteristicsForService:(CBService *)service
 
 - (void) beginFlash:(NVFlashSettings*)settings withCallback:(NVTriggerCallback)callback
 {
-    if (!enabled) {
+    if (self.status != NVFlashServiceReady) {
         callback(NO);
         return;
     }
     
+    char packet[] = {
+        'F',
+        '!',
+        settings.warm,
+        settings.cool,
+        (char)settings.timeout, // low byte
+        (char)settings.timeout >> 8, // high byte
+        0
+    };
     
-    // TODO
+    NSData* payload = [NSData dataWithBytes:(const char*)&packet length:sizeof(packet)];
+    [activePeripheral writeValue:payload
+               forCharacteristic:requestCharacteristic
+                            type:CBCharacteristicWriteWithResponse];
+    
+    // TODO: Update Nova firmware with new protocol.
+    callback(YES);
 }
 
 - (void) endFlash
@@ -334,12 +360,13 @@ didDiscoverCharacteristicsForService:(CBService *)service
 
 - (void) endFlashWithCallback:(NVTriggerCallback)callback
 {
-    if (!enabled) {
+    if (self.status != NVFlashServiceReady) {
         callback(NO);
         return;
     }
     
-    // TODO
+    // TODO: Nova is currently running old firmware - this is no-op. Update Nova firmware and implement this.
+    callback(YES);
 }
 
 
