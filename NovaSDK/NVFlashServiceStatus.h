@@ -31,9 +31,9 @@ typedef NS_ENUM(NSInteger, NVFlashServiceStatus)
     NVFlashServiceDisabled,
     
     /**
-     * No devices are connected and nothing is being scanned for.
+     * No devices are connected and nothing is being scanned for. Just chillin.
      */
-    NVFlashServiceDisconnected,
+    NVFlashServiceIdle,
     
     /**
      * No devices are connected, but we're currently scanning for some.
@@ -46,18 +46,7 @@ typedef NS_ENUM(NSInteger, NVFlashServiceStatus)
     NVFlashServiceConnecting,
     
     /**
-     * BluetoothLE connection to device has been established. Performing final handshake.
-     */
-    NVFlashServiceHandshaking,
-    
-    /**
      * Connection to device is ready and waiting for flashes. Yay.
      */
-    NVFlashServiceReady,
-    
-    /**
-     * Connection to device is established, but the device is currently busy
-     * (most likely performing a flash).
-     */
-    NVFlashServiceBusy
+    NVFlashServiceReady
 };

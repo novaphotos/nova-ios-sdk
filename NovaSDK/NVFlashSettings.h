@@ -22,6 +22,8 @@
 
 #import <Foundation/Foundation.h>
 
+extern double const NV_DEFAULT_FLASH_TIMEOUT;
+
 @interface NVFlashSettings : NSObject
 {
 @private

@@ -22,6 +22,8 @@
 
 #import "NVFlashSettings.h"
 
+double const NV_DEFAULT_FLASH_TIMEOUT = 500;
+
 @implementation NVFlashSettings
 
 - (id) initWithWarm:(uint8_t)warm cool:(uint8_t)cool timeout:(uint16_t)timeout;
@@ -58,7 +60,7 @@
 
 + (NVFlashSettings *)customWarm:(uint8_t)warm cool:(uint8_t)cool
 {
-    return [NVFlashSettings customWarm:warm cool:cool timeout:500];
+    return [NVFlashSettings customWarm:warm cool:cool timeout:NV_DEFAULT_FLASH_TIMEOUT];
 }
 
 + (NVFlashSettings *)customWarm:(uint8_t)warm cool:(uint8_t)cool timeout:(uint16_t)timeout

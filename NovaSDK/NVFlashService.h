@@ -21,6 +21,7 @@
 //  THE SOFTWARE.
 
 #import <Foundation/Foundation.h>
+#import <CoreBluetooth/CoreBluetooth.h>
 #import "NVFlashServiceStatus.h"
 #import "NVTriggerFlash.h"
 
@@ -31,9 +32,19 @@ typedef NS_ENUM(NSInteger, NVAutoPairMode)
     NVAutoPairAll
 };
 
-@interface NVFlashService : NSObject <NVTriggerFlash>
 // TODO: Count individual devices
 // TODO: Simplify making this observable
+@interface NVFlashService : NSObject <NVTriggerFlash, CBCentralManagerDelegate, CBPeripheralDelegate>
+{
+    BOOL enabled;
+    CBCentralManager *central;
+    CBPeripheral *strongestSignalPeripheral;
+    CBPeripheral *activePeripheral;
+    NSNumber *strongestSignalRSSI;
+    NSTimer *startScanTimer;
+    NSTimer *stopScanTimer;
+}
+
 @property (readonly) NVFlashServiceStatus status;
 
 @property NVAutoPairMode autoPairMode;

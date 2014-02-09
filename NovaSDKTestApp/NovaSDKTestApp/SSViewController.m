@@ -33,8 +33,21 @@
     flashService.autoPairMode = NVAutoPairClosest;
     pairMode.selectedSegmentIndex = 1;
     
-    // TODO: Need to be notified when this changes.
-    [self showFlashServiceStatus:NVFlashServiceDisabled];
+    [self showFlashServiceStatus:NVFlashServiceIdle];
+    [flashService addObserver:self
+                   forKeyPath:NSStringFromSelector(@selector(status))
+                      options:0
+                      context:NULL];
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath
+                      ofObject:(id)object
+                        change:(NSDictionary *)change
+                       context:(void *)context
+{
+    if (object == flashService && [keyPath isEqualToString:NSStringFromSelector(@selector(status))]) {
+        [self showFlashServiceStatus:flashService.status];
+    }
 }
 
 // Called by AppDelegate on applicationWillBecomeActive
@@ -103,7 +116,7 @@
 - (IBAction)changeFlashPreset:(id)sender
 {
     NSString *presetText;
-    switch (pairMode.selectedSegmentIndex) {
+    switch (flashPresets.selectedSegmentIndex) {
         case 0:
             presetText = @"Off";
             flashSettings = [NVFlashSettings off];
@@ -172,10 +185,7 @@
             status.text = @"Disabled";
             status.textColor = [UIColor redColor];
             break;
-        case NVFlashServiceDisconnected:
-            status.text = @"Disconnected";
-            status.textColor = [UIColor redColor];
-            break;
+        case NVFlashServiceIdle:
         case NVFlashServiceScanning:
             status.text = @"Scanning...";
             status.textColor = [UIColor orangeColor];
@@ -184,21 +194,14 @@
             status.text = @"Connecting...";
             status.textColor = [UIColor blueColor];
             break;
-        case NVFlashServiceHandshaking:
-            status.text = @"Handshaking...";
-            status.textColor = [UIColor blueColor];
-            break;
         case NVFlashServiceReady:
             status.text = @"Ready";
-            status.textColor = [UIColor greenColor];
-            break;
-        case NVFlashServiceBusy:
-            status.text = @"Busy";
-            status.textColor = [UIColor blueColor];
+            status.textColor = [UIColor colorWithRed:0 green:0.7 blue:0 alpha:1];
             break;
         default:
             [self panic:@"Invalid service status"];
     }
+    [self logFrom:@"Nova" msg:[@"Status changed: " stringByAppendingString:status.text]];
 }
 
 #pragma mark Utils
