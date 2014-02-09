@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		12B73F0C18A6E6B300BB65B9 /* NVFlashSettings.m in Sources */ = {isa = PBXBuildFile; fileRef = 12B73F0B18A6E6B300BB65B9 /* NVFlashSettings.m */; };
 		12C3421D18562B5500B48454 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 12C3421C18562B5500B48454 /* Foundation.framework */; };
 		12C3422E185689D200B48454 /* NVFlashService.m in Sources */ = {isa = PBXBuildFile; fileRef = 12C3422D185689D200B48454 /* NVFlashService.m */; };
 /* End PBXBuildFile section */
@@ -24,6 +25,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		12B73F0B18A6E6B300BB65B9 /* NVFlashSettings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NVFlashSettings.m; sourceTree = "<group>"; };
 		12C3421918562B5500B48454 /* libNovaSDK.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libNovaSDK.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		12C3421C18562B5500B48454 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		12C3422018562B5500B48454 /* NovaSDK-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NovaSDK-Prefix.pch"; sourceTree = "<group>"; };
@@ -80,6 +82,7 @@
 				12C3422C185689D200B48454 /* NVFlashService.h */,
 				12C3422D185689D200B48454 /* NVFlashService.m */,
 				12C3422F18568E5800B48454 /* NVFlashSettings.h */,
+				12B73F0B18A6E6B300BB65B9 /* NVFlashSettings.m */,
 			);
 			path = NovaSDK;
 			sourceTree = "<group>";
@@ -144,6 +147,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				12C3422E185689D200B48454 /* NVFlashService.m in Sources */,
+				12B73F0C18A6E6B300BB65B9 /* NVFlashSettings.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -246,6 +250,7 @@
 				12C3422918562B5500B48454 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
