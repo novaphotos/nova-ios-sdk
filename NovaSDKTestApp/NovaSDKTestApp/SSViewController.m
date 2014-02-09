@@ -33,21 +33,10 @@
     flashService.autoPairMode = NVAutoPairClosest;
     pairMode.selectedSegmentIndex = 1;
     
-    [self showFlashServiceStatus:NVFlashServiceIdle];
-    [flashService addObserver:self
-                   forKeyPath:NSStringFromSelector(@selector(status))
-                      options:0
-                      context:NULL];
-}
-
-- (void)observeValueForKeyPath:(NSString *)keyPath
-                      ofObject:(id)object
-                        change:(NSDictionary *)change
-                       context:(void *)context
-{
-    if (object == flashService && [keyPath isEqualToString:NSStringFromSelector(@selector(status))]) {
-        [self showFlashServiceStatus:flashService.status];
-    }
+    [self showFlashServiceStatus:flashService.status];
+    [flashService observeStatus:^(NVFlashServiceStatus serviceStatus) {
+        [self showFlashServiceStatus:serviceStatus];
+    }];
 }
 
 // Called by AppDelegate on applicationWillBecomeActive

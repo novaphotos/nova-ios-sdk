@@ -45,6 +45,12 @@ static NSTimeInterval const scanDuration = 0.5; // How long to scan for, in seco
     if (self) {
         enabled = NO;
         central = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
+        
+        statusCallback = ^ (NVFlashServiceStatus status) {};        
+        [self addObserver:self
+               forKeyPath:NSStringFromSelector(@selector(status))
+                  options:0
+                  context:NULL];
     }
     return self;
 }
@@ -62,6 +68,20 @@ static NSTimeInterval const scanDuration = 0.5; // How long to scan for, in seco
     }
 }
 
+- (void)observeValueForKeyPath:(NSString *)keyPath
+                      ofObject:(id)object
+                        change:(NSDictionary *)change
+                       context:(void *)context
+{
+    if (object == self && [keyPath isEqualToString:NSStringFromSelector(@selector(status))]) {
+        statusCallback(self.status);
+    }
+}
+
+- (void) observeStatus:(NVFlashServiceStatusCallback)callback
+{
+    statusCallback = callback;
+}
 
 #pragma mark NFFlashService lifecycle implementation
 

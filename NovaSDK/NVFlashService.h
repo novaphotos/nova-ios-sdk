@@ -32,11 +32,12 @@ typedef NS_ENUM(NSInteger, NVAutoPairMode)
     NVAutoPairAll
 };
 
-// TODO: Count individual devices
-// TODO: Simplify making this observable
+typedef void (^NVFlashServiceStatusCallback)(NVFlashServiceStatus);
+
 @interface NVFlashService : NSObject <NVTriggerFlash, CBCentralManagerDelegate, CBPeripheralDelegate>
 {
     BOOL enabled;
+    NVFlashServiceStatusCallback statusCallback;
     CBCentralManager *central;
     CBPeripheral *strongestSignalPeripheral;
     CBPeripheral *activePeripheral;
@@ -50,6 +51,17 @@ typedef NS_ENUM(NSInteger, NVAutoPairMode)
 @property (readonly) NVFlashServiceStatus status;
 
 @property NVAutoPairMode autoPairMode;
+
+/*!
+ *  @method observeStatus:
+ *
+ *  @discussion                 Observe when 'status' field changes.
+ *                              If this is called multiple times, only the last callback is used.
+ *                              For multiple observers use key-value-observing instead.
+ *
+ *  @see                        status
+ */
+- (void) observeStatus:(NVFlashServiceStatusCallback)callback;
 
 /*!
  *  @method enable
