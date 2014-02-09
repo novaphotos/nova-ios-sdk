@@ -30,18 +30,48 @@
     uint16_t timeout_;
 }
 
+// Set intensity of warm LEDs. Any value from 0-255, where 0=off and 255=max.
 @property (readonly) uint8_t warm;
+
+// Set intensity of cool LEDs. Any value from 0-255, where 0=off and 255=max.
 @property (readonly) uint8_t cool;
-// in millis
+
+// Time (in milliseconds) between beginFlash and endFlash that the flash hardware will wait
+// before automatically shutting off.
+//
+// This serves two purposes:
+//
+// 1. To act as a fallback mechanism in case the application crashes between beginning
+//    the flash and ending it. This will ensure the flash eventually turns off and doesn't
+//    waste too much battery power.
+//
+// 2. For very short flashes (say < 10ms), it is more effictive to begin a flash with a
+//    timeout, than to explicitly end the flash. This should only be used for short flashes
+//    as the timer on the hardware is not very accurate (it can drift +/- 20%).
 @property (readonly) uint16_t timeout;
 
+// Constructor. Better to use the static helper functions.
+// e.g. [NVFlashSettings warm], [NVFlashSettings customWarm:123 cool:20], etc...
 - (id) initWithWarm:(uint8_t)warm cool:(uint8_t)cool timeout:(uint16_t)timeout;
 
+// Preset settings for flash 'off'. No flash will occur.
 + (NVFlashSettings *)off;
+
+// Preset settings for 'gentle' flash.
+// A slight warm light, ideal for closeup photos.
 + (NVFlashSettings *)gentle;
+
+// Preset settings for 'warm' flash.
+// A bright natural looking warm light, ideal for people portraits at night.
 + (NVFlashSettings *)warm;
+
+// Preset settings for 'bright' flash.
+// The brightest mode, with all LEDs at full brightness.
 + (NVFlashSettings *)bright;
+
+// Custom brightness settings. Warm and cool LEDs are each in range 0-255, where 0=off and 255=max.
 + (NVFlashSettings *)customWarm:(uint8_t)warm cool:(uint8_t)cool;
+
 + (NVFlashSettings *)customWarm:(uint8_t)warm cool:(uint8_t)cool timeout:(uint16_t)timeout;
 
 @end

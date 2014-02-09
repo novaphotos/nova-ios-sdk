@@ -32,8 +32,7 @@ typedef NS_ENUM(NSInteger, NVAutoPairMode)
 };
 
 @interface NVFlashService : NSObject <NVTriggerFlash>
-// TODO: Flash timeout
-// TODO: Expose individual devices
+// TODO: Count individual devices
 // TODO: Simplify making this observable
 @property (readonly) NVFlashServiceStatus status;
 
