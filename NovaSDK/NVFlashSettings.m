@@ -24,20 +24,21 @@
 
 @implementation NVFlashSettings
 
-- (id) initWithWarm:(uint8_t)warm cool:(uint8_t)cool duration:(uint16_t)duration;
+- (id) initWithWarm:(uint8_t)warm cool:(uint8_t)cool timeout:(uint16_t)timeout;
 {
+    // TOOD: Verify properties work
     self = [super init];
     if (self) {
         warm_ = warm;
         cool_ = cool;
-        duration_ = duration;
+        timeout_ = timeout;
     }
     return self;
 }
 
 + (NVFlashSettings *)off
 {
-    return [NVFlashSettings customWarm:0 cool:0 duration: 0];
+    return [NVFlashSettings customWarm:0 cool:0 timeout: 0];
 }
 
 + (NVFlashSettings *)gentle
@@ -57,12 +58,12 @@
 
 + (NVFlashSettings *)customWarm:(uint8_t)warm cool:(uint8_t)cool
 {
-    return [NVFlashSettings customWarm:warm cool:cool duration:500];
+    return [NVFlashSettings customWarm:warm cool:cool timeout:500];
 }
 
-+ (NVFlashSettings *)customWarm:(uint8_t)warm cool:(uint8_t)cool duration:(uint16_t)duration
++ (NVFlashSettings *)customWarm:(uint8_t)warm cool:(uint8_t)cool timeout:(uint16_t)timeout
 {
-    return [[NVFlashSettings alloc] initWithWarm:warm cool:cool duration:duration];
+    return [[NVFlashSettings alloc] initWithWarm:warm cool:cool timeout:timeout];
 }
 
 @end
