@@ -9,6 +9,8 @@ https://wantnova.com/
 
 https://wantnova.com/sdk/
 
+Here's a [test application](NovaSDKTestApp) for exploring the SDK.
+
 -@joewalnes
 
 
