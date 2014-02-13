@@ -1,0 +1,14 @@
+To release a new version:
+
+* git tag 0.0.X
+* git push --tags
+* Update NovaSDK.podspec with new version (s.version and s.source)
+* pod spec lint NovaSDK.podspec
+* Correct any issues
+* Commit and push
+
+Then in clone of https://github.com/nova-device/Specs/:
+* mkdir NovaSDK/0.0.x
+* cp (podspec from this repo) to NovaSDK/0.0.x/
+* commit, push and perform a pull request
+
