@@ -349,28 +349,12 @@ didDiscoverCharacteristicsForService:(CBService *)service
 
 - (void) beginFlash:(NVFlashSettings*)settings withCallback:(NVTriggerCallback)callback
 {
-    if (self.status != NVFlashServiceReady) {
-        callback(NO);
-        return;
+    if ((settings.warm == 0 && settings.cool == 0) || settings.timeout == 0) {
+        // settings say that flash is effectively off
+        [self request:offCmd() withCallback:callback];
+    } else {
+        [self request:lightCmd(settings.warm, settings.cool, settings.timeout) withCallback:callback];
     }
-    
-    char packet[] = {
-        'F',
-        '!',
-        settings.warm,
-        settings.cool,
-        (char)settings.timeout, // low byte
-        (char)settings.timeout >> 8, // high byte
-        0
-    };
-    
-    NSData* payload = [NSData dataWithBytes:(const char*)&packet length:sizeof(packet)];
-    [activePeripheral writeValue:payload
-               forCharacteristic:requestCharacteristic
-                            type:CBCharacteristicWriteWithResponse];
-    
-    // TODO: Update Nova firmware with new protocol.
-    callback(YES);
 }
 
 - (void) endFlash
@@ -380,14 +364,53 @@ didDiscoverCharacteristicsForService:(CBService *)service
 
 - (void) endFlashWithCallback:(NVTriggerCallback)callback
 {
-    if (self.status != NVFlashServiceReady) {
-        callback(NO);
-        return;
-    }
-    
-    // TODO: Nova is currently running old firmware - this is no-op. Update Nova firmware and implement this.
-    callback(YES);
+    [self request:offCmd() withCallback:callback];
 }
 
+- (void) pingWithCallback:(NVTriggerCallback)callback
+{
+    [self request:pingCmd() withCallback:callback];
+}
+
+- (void) request:(NSString*)cmd withCallback:(NVTriggerCallback)callback
+{
+    if (self.status != NVFlashServiceReady) {
+        callback(NO); // TODO: Async
+        return;
+    }
+
+    uint8_t requestId = nextRequestId++; // When nextRequestId (uint8_t) hits 255 it'll naturally wrap around back to 0.
+    
+    NSString* body = frameRequest(requestId, cmd);
+    NSLog(@"--> %@", body);
+    
+    [activePeripheral writeValue:[body dataUsingEncoding:NSASCIIStringEncoding]
+               forCharacteristic:requestCharacteristic
+                            type:CBCharacteristicWriteWithResponse];
+
+    callback(YES); // TODO: Wait for ACK command from device.
+}
+
+NSString* frameRequest(uint8_t requestId, NSString *body) {
+    // Requests are framed "(xx:yy)" where xx is 2 digit hex requestId and yy is body string.
+    // e.g. "(00:P)"
+    //      "(4A:L,00,FF,05DC)"
+    return [NSString stringWithFormat:@"(%02X:%@)", requestId, body];
+}
+
+NSString *pingCmd() {
+    return @"P";
+}
+
+NSString* lightCmd(uint8_t warmPwm, uint8_t coolPwm, uint8_t timeoutMillis) {
+    // Light cmd is formatted "L,w,c,t" where w and c are warm/cool pwm duty cycles as 2 digit hex
+    // and t is 4 digit hex timeout.
+    // e.g. "L,00,FF,05DC" (means light with warm=0, cool=255, timeout=1500ms)
+    return [NSString stringWithFormat:@"L,%02X,%02X,%04X", warmPwm, coolPwm, timeoutMillis];
+}
+
+NSString* offCmd() {
+    return @"O";
+}
 
 @end

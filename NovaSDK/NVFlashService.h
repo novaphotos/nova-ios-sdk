@@ -46,6 +46,7 @@ typedef void (^NVFlashServiceStatusCallback)(NVFlashServiceStatus);
     NSNumber *strongestSignalRSSI;
     NSTimer *startScanTimer;
     NSTimer *stopScanTimer;
+    uint8_t nextRequestId;
 }
 
 @property (readonly) NVFlashServiceStatus status;

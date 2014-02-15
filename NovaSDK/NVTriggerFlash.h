@@ -35,5 +35,7 @@ typedef void (^NVTriggerCallback)(BOOL);
 
 - (void) endFlashWithCallback:(NVTriggerCallback)callback;
 
+- (void) pingWithCallback:(NVTriggerCallback)callback;
+
 @end
 
