@@ -32,8 +32,6 @@ typedef NS_ENUM(NSInteger, NVAutoPairMode)
     NVAutoPairAll
 };
 
-typedef void (^NVFlashServiceStatusCallback)(NVFlashServiceStatus);
-
 // Used internally.
 @interface NVCommand : NSObject
 @property uint8_t requestId;
@@ -44,7 +42,6 @@ typedef void (^NVFlashServiceStatusCallback)(NVFlashServiceStatus);
 @interface NVFlashService : NSObject <NVTriggerFlash, CBCentralManagerDelegate, CBPeripheralDelegate>
 {
     BOOL enabled;
-    NVFlashServiceStatusCallback statusCallback;
     CBCentralManager *central;
     CBPeripheral *strongestSignalPeripheral;
     CBPeripheral *activePeripheral;
@@ -62,17 +59,6 @@ typedef void (^NVFlashServiceStatusCallback)(NVFlashServiceStatus);
 @property (readonly) NVFlashServiceStatus status;
 
 @property NVAutoPairMode autoPairMode;
-
-/*!
- *  @method observeStatus:
- *
- *  @discussion                 Observe when 'status' field changes.
- *                              If this is called multiple times, only the last callback is used.
- *                              For multiple observers use key-value-observing instead.
- *
- *  @see                        status
- */
-- (void) observeStatus:(NVFlashServiceStatusCallback)callback;
 
 /*!
  *  @method enable

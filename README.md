@@ -55,14 +55,8 @@ both the iPhone and Nova:
 
 You can read the status of `flashService.status` at any time.
 
-You can observe when the status changes, using standard Objective-C key-value-observing,
-or this convenience method:
+You can observe when the status changes, using standard Objective-C key-value-observing.
 
-```objective-c
-[flashService observeStatus:^ (NVFlashServiceStatus status) {
-  ...
-}];
-```
 The enum values of `NVFlashServiceStatus` are:
 
 ``` 

@@ -49,12 +49,6 @@ static NSTimeInterval const ackTimeout = 2; // How long before we give up waitin
         enabled = NO;
         central = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
         awaitingSend = [NSMutableArray new];
-        
-        statusCallback = ^ (NVFlashServiceStatus status) {};        
-        [self addObserver:self
-               forKeyPath:NSStringFromSelector(@selector(status))
-                  options:0
-                  context:NULL];
     }
     return self;
 }
@@ -70,21 +64,6 @@ static NSTimeInterval const ackTimeout = 2; // How long before we give up waitin
     } else {
         self.status = NVFlashServiceDisabled;
     }
-}
-
-- (void)observeValueForKeyPath:(NSString *)keyPath
-                      ofObject:(id)object
-                        change:(NSDictionary *)change
-                       context:(void *)context
-{
-    if (object == self && [keyPath isEqualToString:NSStringFromSelector(@selector(status))]) {
-        statusCallback(self.status);
-    }
-}
-
-- (void) observeStatus:(NVFlashServiceStatusCallback)callback
-{
-    statusCallback = callback;
 }
 
 #pragma mark NFFlashService lifecycle implementation

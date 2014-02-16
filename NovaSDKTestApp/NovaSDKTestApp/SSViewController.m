@@ -34,9 +34,23 @@
     pairMode.selectedSegmentIndex = 1;
     
     [self showFlashServiceStatus:flashService.status];
-    [flashService observeStatus:^(NVFlashServiceStatus serviceStatus) {
-        [self showFlashServiceStatus:serviceStatus];
-    }];
+    // Watch for flashService.status changes.
+    [flashService addObserver:self
+                   forKeyPath:NSStringFromSelector(@selector(status))
+                      options:0
+                     context:NULL];
+
+}
+
+// KVO event fired when flashService.status changes.
+- (void)observeValueForKeyPath:(NSString *)keyPath
+                      ofObject:(id)object
+                        change:(NSDictionary *)change
+                       context:(void *)context
+{
+    if (object == flashService && [keyPath isEqualToString:NSStringFromSelector(@selector(status))]) {
+        [self showFlashServiceStatus: flashService.status];
+    }
 }
 
 // Called by AppDelegate on applicationWillBecomeActive
