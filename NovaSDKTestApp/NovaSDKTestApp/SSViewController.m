@@ -155,7 +155,9 @@
     
     [flashService beginFlash:flashSettings withCallback:^ (BOOL success) {
         [self logFrom:@"Nova" msg:(success ? @"Flash activated" : @"Flash FAILED to activate")];
+        [self updateFlashButton];
     }];
+    [self updateFlashButton];
 }
 
 // Called when user releases flash button
@@ -165,7 +167,9 @@
 
     [flashService endFlashWithCallback:^ (BOOL success) {
         [self logFrom:@"Nova" msg:(success ? @"Flash deactivated" : @"Flash FAILED to deactivate")];
+        [self updateFlashButton];
     }];
+    [self updateFlashButton];
 }
 
 
@@ -205,8 +209,12 @@
             [self panic:@"Invalid service status"];
     }
     [self logFrom:@"Nova" msg:[@"Status changed: " stringByAppendingString:status.text]];
-    
-    flash.enabled = serviceStatus == NVFlashServiceReady;
+    [self updateFlashButton];
+}
+
+- (void)updateFlashButton
+{
+    flash.enabled = flashService.status == NVFlashServiceReady && !flashService.commandInProgress;
 }
 
 #pragma mark Utils

@@ -100,7 +100,9 @@ Triggering a flash should only be attempted when `flashService.status == NVFlash
     [myCameraAbstraction takePhotoWithCallback:(^ {
 
       // Step 4: When photo has been captured, turn the flash off.
-      [flashService:endFlash];
+      [flashService:endFlashWithCallback:(^ {
+        // Step 5: Done. Ready to take another photo.
+      })];
 
     })];
 

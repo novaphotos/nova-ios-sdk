@@ -27,6 +27,8 @@ typedef void (^NVTriggerCallback)(BOOL);
 
 @protocol NVTriggerFlash <NSObject>
 
+@property (readonly) bool commandInProgress;
+
 - (void) beginFlash:(NVFlashSettings*)settings;
 
 - (void) beginFlash:(NVFlashSettings*)settings withCallback:(NVTriggerCallback)callback;

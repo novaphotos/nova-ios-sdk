@@ -343,8 +343,7 @@ didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic
     
     //NSLog(@"<-- %@ [ACK]", frameMsg(awaitingAck.requestId, awaitingAck.msg));
     
-    // Trigger callback.
-    awaitingAck.callback(YES);
+    NVTriggerCallback callback = awaitingAck.callback;
     
     // No longer awaiting the ack.
     awaitingAck = nil;
@@ -355,6 +354,9 @@ didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic
 
     // Send any queued outbound messages.
     [self processSendQueue];
+    
+    // Trigger user callback.
+    callback(YES);
 }
 
 - (void) disconnect
@@ -384,6 +386,11 @@ didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic
 }
 
 #pragma mark NVTriggerFlash flash control implementation
+
+- (bool) commandInProgress
+{
+    return awaitingAck != nil;
+}
 
 - (void) beginFlash:(NVFlashSettings*)settings
 {
