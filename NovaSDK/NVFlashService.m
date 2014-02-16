@@ -26,6 +26,9 @@
 @property NVFlashServiceStatus status; // Override interface declaration so we can change the value.
 @end
 
+@implementation NVCommand
+@end
+
 @implementation NVFlashService
 
 
@@ -35,7 +38,7 @@ static NSString* const kResponseCharacteristicUUID = @"FFF4";
 
 static NSTimeInterval const scanInterval = 1; // How long between scans, in seconds.
 static NSTimeInterval const scanDuration = 0.5; // How long to scan for, in seconds.
-
+static NSTimeInterval const ackTimeout = 2; // How long before we give up waiting for ack from device, in seconds.
 
 #pragma mark Initialization
 
@@ -45,6 +48,7 @@ static NSTimeInterval const scanDuration = 0.5; // How long to scan for, in seco
     if (self) {
         enabled = NO;
         central = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
+        awaitingSend = [NSMutableArray new];
         
         statusCallback = ^ (NVFlashServiceStatus status) {};        
         [self addObserver:self
@@ -123,7 +127,6 @@ static NSTimeInterval const scanDuration = 0.5; // How long to scan for, in seco
 
     [self disconnect];
 
-    // TODO: Abort commands in progress
     self.status = NVFlashServiceDisabled;
 }
 
@@ -315,6 +318,8 @@ didDiscoverCharacteristicsForService:(CBService *)service
         }
         if ([characteristic.UUID isEqual:[CBUUID UUIDWithString:kResponseCharacteristicUUID]]) {
             responseCharacteristic = characteristic;
+            // Subscribe to notifications
+            [peripheral setNotifyValue:YES forCharacteristic:responseCharacteristic];
         }
     }
 
@@ -327,6 +332,52 @@ didDiscoverCharacteristicsForService:(CBService *)service
     }
 }
 
+- (void)             peripheral:(CBPeripheral *)peripheral
+didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic
+                          error:(NSError *)error
+{
+    if (activePeripheral != peripheral || ![characteristic.UUID isEqual:[CBUUID UUIDWithString:kResponseCharacteristicUUID]]) {
+        return;
+    }
+
+    NSString* response = [[NSString alloc] initWithData:characteristic.value encoding:NSASCIIStringEncoding];
+    //NSLog(@"<-- %@", response);
+    
+    uint8_t responseId;
+    if (!parseAck(response, &responseId)) {
+        //NSLog(@"Failed to parse response: %@", response);
+        [self disconnect];
+        return;
+    }
+    
+    if (awaitingAck == nil) {
+        //NSLog(@"Was not expecting ack (got: %u)", responseId);
+        [self disconnect];
+        return;
+    }
+
+    if (awaitingAck.requestId != responseId) {
+        //NSLog(@"Unexpected ack (got: %u, expected: %u)", responseId, awaitingAck.requestId);
+        [self disconnect];
+        return;
+    }
+    
+    //NSLog(@"<-- %@ [ACK]", frameMsg(awaitingAck.requestId, awaitingAck.msg));
+    
+    // Trigger callback.
+    awaitingAck.callback(YES);
+    
+    // No longer awaiting the ack.
+    awaitingAck = nil;
+
+    // Cancel timeout timer.
+    [ackTimer invalidate];
+    ackTimer = nil;
+
+    // Send any queued outbound messages.
+    [self processSendQueue];
+}
+
 - (void) disconnect
 {
     if (activePeripheral != nil) {
@@ -336,6 +387,19 @@ didDiscoverCharacteristicsForService:(CBService *)service
     activePeripheral = nil;
     requestCharacteristic = nil;
     responseCharacteristic = nil;
+
+    [ackTimer invalidate];
+    ackTimer = nil;
+
+    // Abort any queued requests.
+    if (awaitingAck != nil) {
+        awaitingAck.callback(NO);
+        awaitingAck = nil;
+    }
+    for (NVCommand *cmd in awaitingSend) {
+        cmd.callback(NO);
+    }
+    [awaitingSend removeAllObjects];
 
     self.status = NVFlashServiceIdle;
 }
@@ -372,45 +436,114 @@ didDiscoverCharacteristicsForService:(CBService *)service
     [self request:pingCmd() withCallback:callback];
 }
 
-- (void) request:(NSString*)cmd withCallback:(NVTriggerCallback)callback
+- (void) request:(NSString*)msg withCallback:(NVTriggerCallback)callback
 {
     if (self.status != NVFlashServiceReady) {
         callback(NO); // TODO: Async
         return;
     }
 
-    uint8_t requestId = nextRequestId++; // When nextRequestId (uint8_t) hits 255 it'll naturally wrap around back to 0.
-    
-    NSString* body = frameRequest(requestId, cmd);
-    NSLog(@"--> %@", body);
-    
-    [activePeripheral writeValue:[body dataUsingEncoding:NSASCIIStringEncoding]
-               forCharacteristic:requestCharacteristic
-                            type:CBCharacteristicWriteWithResponse];
+    NVCommand* cmd = [NVCommand new];
+    cmd.requestId = nextRequestId++; // When nextRequestId (uint8_t) hits 255 it'll naturally wrap around back to 0.
+    cmd.msg = msg;
+    cmd.callback = callback;
 
-    callback(YES); // TODO: Wait for ACK command from device.
+    [awaitingSend addObject:cmd];
+    [self processSendQueue];
 }
 
-NSString* frameRequest(uint8_t requestId, NSString *body) {
+-(void) processSendQueue
+{
+    // If we're not waiting for anything to be acked, go ahead and send the next cmd in the outbound queue.
+    if (awaitingAck == nil && awaitingSend.count > 0) {
+        
+        // Shift first command from front of awaitingSend queue.
+        NVCommand* cmd = [awaitingSend objectAtIndex:0];
+        [awaitingSend removeObjectAtIndex:0];
+        
+        NSString* body = frameMsg(cmd.requestId, cmd.msg);
+        //NSLog(@"--> %@", body);
+        
+        // Write to device.
+        [activePeripheral writeValue:[body dataUsingEncoding:NSASCIIStringEncoding]
+                   forCharacteristic:requestCharacteristic
+                                type:CBCharacteristicWriteWithResponse];
+        
+        // Now we're waiting for this.
+        awaitingAck = cmd;
+        
+        // Set timer for acks so we don't hang forever waiting.
+        ackTimer = [NSTimer scheduledTimerWithTimeInterval:ackTimeout
+                                                    target:self
+                                                  selector:@selector(ackTookTooLong)
+                                                  userInfo:nil
+                                                   repeats:NO];
+
+    }
+}
+
+- (void)ackTookTooLong
+{
+    [ackTimer invalidate];
+    ackTimer = nil;
+    
+    if (awaitingAck != nil) {
+        //NSLog(@"Timeout waiting for %@ ack", frameMsg(awaitingAck.requestId, awaitingAck.msg));
+        awaitingAck.callback(NO);
+    }
+    
+    awaitingAck = nil;
+    [self processSendQueue];
+}
+
+NSString* frameMsg(uint8_t requestId, NSString *body)
+{
     // Requests are framed "(xx:yy)" where xx is 2 digit hex requestId and yy is body string.
     // e.g. "(00:P)"
     //      "(4A:L,00,FF,05DC)"
     return [NSString stringWithFormat:@"(%02X:%@)", requestId, body];
 }
 
-NSString *pingCmd() {
+NSString *pingCmd()
+{
     return @"P";
 }
 
-NSString* lightCmd(uint8_t warmPwm, uint8_t coolPwm, uint8_t timeoutMillis) {
+NSString* lightCmd(uint8_t warmPwm, uint8_t coolPwm, uint8_t timeoutMillis)
+{
     // Light cmd is formatted "L,w,c,t" where w and c are warm/cool pwm duty cycles as 2 digit hex
     // and t is 4 digit hex timeout.
     // e.g. "L,00,FF,05DC" (means light with warm=0, cool=255, timeout=1500ms)
     return [NSString stringWithFormat:@"L,%02X,%02X,%04X", warmPwm, coolPwm, timeoutMillis];
 }
 
-NSString* offCmd() {
+NSString* offCmd()
+{
     return @"O";
+}
+
+bool parseAck(NSString *fullmsg, uint8_t* resultId)
+{
+    // Parses "(xx:A)" packet where xx is hex value for resultId.
+
+    NSError *regexError = nil;
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"\\(([0-9A-Za-z][0-9A-Za-z]):A\\)"
+                                                                           options:0
+                                                                             error:&regexError];
+    
+    NSRange range = NSMakeRange(0, [fullmsg length]);
+    NSArray *matches = [regex matchesInString:fullmsg options:0 range:range];
+    if (matches.count == 0) {
+        *resultId = 0;
+        return NO;
+    }
+    
+    unsigned scanned;
+    NSString *hex = [fullmsg substringWithRange:[[matches objectAtIndex:0] rangeAtIndex:1]];
+    [[NSScanner scannerWithString:hex] scanHexInt:(unsigned*)&scanned];
+    
+    *resultId = (uint8_t)scanned;
+    return YES;
 }
 
 @end

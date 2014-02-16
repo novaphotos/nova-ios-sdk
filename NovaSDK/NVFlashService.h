@@ -34,6 +34,13 @@ typedef NS_ENUM(NSInteger, NVAutoPairMode)
 
 typedef void (^NVFlashServiceStatusCallback)(NVFlashServiceStatus);
 
+// Used internally.
+@interface NVCommand : NSObject
+@property uint8_t requestId;
+@property NSString* msg;
+@property (strong) NVTriggerCallback callback;
+@end
+
 @interface NVFlashService : NSObject <NVTriggerFlash, CBCentralManagerDelegate, CBPeripheralDelegate>
 {
     BOOL enabled;
@@ -47,6 +54,9 @@ typedef void (^NVFlashServiceStatusCallback)(NVFlashServiceStatus);
     NSTimer *startScanTimer;
     NSTimer *stopScanTimer;
     uint8_t nextRequestId;
+    NSMutableArray *awaitingSend;
+    NVCommand *awaitingAck;
+    NSTimer *ackTimer;
 }
 
 @property (readonly) NVFlashServiceStatus status;
