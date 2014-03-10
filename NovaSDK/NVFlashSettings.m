@@ -55,7 +55,7 @@ double const NV_DEFAULT_FLASH_TIMEOUT = 500;
 
 + (NVFlashSettings *)warm
 {
-    return [NVFlashSettings customWarm:255 cool:20];
+    return [NVFlashSettings customWarm:255 cool:0];
 }
 
 + (NVFlashSettings *)bright
