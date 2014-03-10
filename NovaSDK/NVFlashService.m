@@ -97,6 +97,11 @@ static NSTimeInterval const ackTimeout = 2; // How long before we give up waitin
     }
     
     enabled = NO;
+    
+    if (central.state != CBCentralManagerStatePoweredOn) {
+        return;
+    }
+
     [central stopScan];
     
     [startScanTimer invalidate];
