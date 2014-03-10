@@ -500,7 +500,7 @@ NSString *pingCmd()
     return @"P";
 }
 
-NSString* lightCmd(uint8_t warmPwm, uint8_t coolPwm, uint8_t timeoutMillis)
+NSString* lightCmd(uint8_t warmPwm, uint8_t coolPwm, uint16_t timeoutMillis)
 {
     // Light cmd is formatted "L,w,c,t" where w and c are warm/cool pwm duty cycles as 2 digit hex
     // and t is 4 digit hex timeout.
