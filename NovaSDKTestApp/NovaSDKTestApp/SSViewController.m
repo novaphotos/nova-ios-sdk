@@ -39,7 +39,8 @@
                    forKeyPath:NSStringFromSelector(@selector(status))
                       options:0
                      context:NULL];
-
+    
+    [self changeFlashPreset:0];
 }
 
 // KVO event fired when flashService.status changes.
@@ -119,6 +120,7 @@
 - (IBAction)changeFlashPreset:(id)sender
 {
     NSString *presetText;
+    bool enableCustomSlider = NO;
     switch (flashPresets.selectedSegmentIndex) {
         case 0:
             presetText = @"Off";
@@ -138,14 +140,27 @@
             break;
         case 4:
             presetText = @"Custom";
-            // TODO: Allow user to enter these values.
-            flashSettings = [NVFlashSettings customWarm:100 cool:100];
+            enableCustomSlider = YES;
+            [self customSliderChange:sender]; // Update custom values
             break;
         default:
             [self panic:@"changeFlashPreset invalid value"];
             return;
     }
+    warmValue.hidden = !enableCustomSlider;
+    coolValue.hidden = !enableCustomSlider;
+    warmSlider.hidden = !enableCustomSlider;
+    coolSlider.hidden = !enableCustomSlider;
     [self logFrom:@"User" msg:[@"Change flash preset: " stringByAppendingString:presetText]];
+}
+
+- (IBAction)customSliderChange:(id)sender
+{
+    uint8_t warm = warmSlider.value;
+    uint8_t cool = coolSlider.value;
+    warmValue.text = [NSString stringWithFormat:@"Warm: %d", warm];
+    coolValue.text = [NSString stringWithFormat:@"Cool: %d", cool];
+    flashSettings = [NVFlashSettings customWarm:warm cool:cool];
 }
 
 // Called when user presses flash button down
