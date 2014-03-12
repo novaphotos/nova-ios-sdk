@@ -147,10 +147,16 @@
             [self panic:@"changeFlashPreset invalid value"];
             return;
     }
-    warmValue.hidden = !enableCustomSlider;
-    coolValue.hidden = !enableCustomSlider;
-    warmSlider.hidden = !enableCustomSlider;
-    coolSlider.hidden = !enableCustomSlider;
+    if (enableCustomSlider) {
+        warmSlider.hidden = NO;
+        coolSlider.hidden = NO;
+        [self customSliderChange:self];
+    } else {
+        warmValue.text = [NSString stringWithFormat:@"Warm: %d", flashSettings.warm];
+        coolValue.text = [NSString stringWithFormat:@"Cool: %d", flashSettings.cool];
+        warmSlider.hidden = YES;
+        coolSlider.hidden = YES;
+    }
     [self logFrom:@"User" msg:[@"Change flash preset: " stringByAppendingString:presetText]];
 }
 
