@@ -150,12 +150,15 @@
     if (enableCustomSlider) {
         warmSlider.hidden = NO;
         coolSlider.hidden = NO;
+        timeoutSlider.hidden = NO;
         [self customSliderChange:self];
     } else {
         warmValue.text = [NSString stringWithFormat:@"Warm: %d", flashSettings.warm];
         coolValue.text = [NSString stringWithFormat:@"Cool: %d", flashSettings.cool];
+        timeoutValue.text = [NSString stringWithFormat:@"Timeout: %dms", flashSettings.timeout];
         warmSlider.hidden = YES;
         coolSlider.hidden = YES;
+        timeoutSlider.hidden = YES;
     }
     [self logFrom:@"User" msg:[@"Change flash preset: " stringByAppendingString:presetText]];
 }
@@ -164,9 +167,11 @@
 {
     uint8_t warm = warmSlider.value;
     uint8_t cool = coolSlider.value;
+    uint16_t timeout = timeoutSlider.value;
     warmValue.text = [NSString stringWithFormat:@"Warm: %d", warm];
     coolValue.text = [NSString stringWithFormat:@"Cool: %d", cool];
-    flashSettings = [NVFlashSettings customWarm:warm cool:cool];
+    timeoutValue.text = [NSString stringWithFormat:@"Timeout: %dms", timeout];
+    flashSettings = [NVFlashSettings customWarm:warm cool:cool timeout:timeout];
 }
 
 // Called when user presses flash button down

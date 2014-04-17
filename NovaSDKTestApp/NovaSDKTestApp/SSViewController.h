@@ -21,8 +21,10 @@
     IBOutlet UISegmentedControl *flashPresets;
     IBOutlet UILabel *warmValue;
     IBOutlet UILabel *coolValue;
+    IBOutlet UILabel *timeoutValue;
     IBOutlet UISlider *warmSlider;
     IBOutlet UISlider *coolSlider;
+    IBOutlet UISlider *timeoutSlider;
     
     IBOutlet UIButton *flash;
 
