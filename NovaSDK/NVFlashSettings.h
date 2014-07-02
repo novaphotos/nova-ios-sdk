@@ -61,6 +61,10 @@ extern uint16_t const NV_DEFAULT_FLASH_TIMEOUT;
 // A bright natural looking warm light, ideal for people portraits at night.
 + (NVFlashSettings *)warm;
 
+// Preset settings for 'neutral' flash.
+// For whiter light. No added warmth.
++ (NVFlashSettings *)neutral;
+
 // Preset settings for 'bright' flash.
 // The brightest mode, with all LEDs at full brightness.
 + (NVFlashSettings *)bright;
