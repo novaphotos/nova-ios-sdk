@@ -78,4 +78,8 @@ uint16_t const NV_DEFAULT_FLASH_TIMEOUT = 1500;
     return [[NVFlashSettings alloc] initWithWarm:warm cool:cool timeout:timeout];
 }
 
+- (NVFlashSettings *)flashSettingsWithTimeout:(uint16_t)timeout
+{
+    return [NVFlashSettings customWarm:self.warm cool:self.cool timeout:timeout];
+}
 @end

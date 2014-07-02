@@ -71,7 +71,9 @@ extern uint16_t const NV_DEFAULT_FLASH_TIMEOUT;
 
 // Custom brightness settings. Warm and cool LEDs are each in range 0-255, where 0=off and 255=max.
 + (NVFlashSettings *)customWarm:(uint8_t)warm cool:(uint8_t)cool;
-
 + (NVFlashSettings *)customWarm:(uint8_t)warm cool:(uint8_t)cool timeout:(uint16_t)timeout;
 
+// Creates a variation of the current settings with a different timeout. This returns a new
+// instance - the underlying instance is immutable.
+- (NVFlashSettings *)flashSettingsWithTimeout:(uint16_t)timeout;
 @end
