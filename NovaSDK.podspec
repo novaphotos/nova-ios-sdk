@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = "NovaSDK"
-  s.version      = "0.0.4"
+  s.version      = "1.0.0"
   s.summary      = "SDK to control Nova off-camera flash hardware."
   s.description  = <<-DESC
                    Allow the Nova off-camera flash hardware to be controlled
@@ -27,7 +27,7 @@ Pod::Spec.new do |s|
   s.social_media_url = "http://twitter.com/joewalnes"
   s.platform     = :ios, '6.0'
   s.ios.deployment_target = '6.0'
-  s.source       = { :git => "https://github.com/nova-device/nova-ios-sdk.git", :tag => "0.0.4" }
+  s.source       = { :git => "https://github.com/nova-device/nova-ios-sdk.git", :tag => "1.0.0" }
   s.source_files  = 'NovaSDK/*.{h,m}'
   s.framework  = 'CoreBluetooth'
   s.requires_arc = true
