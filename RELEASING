@@ -1,14 +1,14 @@
 To release a new version:
 
-* git tag 0.0.X
+* git tag 1.x.x
 * git push --tags
-* Update NovaSDK.podspec with new version (s.version and s.source)
-* pod spec lint NovaSDK.podspec
+* Update NovaSDK.podspec.json with new version (s.version and s.source)
+* pod spec lint NovaSDK.podspec.json
 * Correct any issues
 * Commit and push
 
 Then in clone of https://github.com/nova-device/Specs/:
-* mkdir NovaSDK/0.0.x
-* cp (podspec from this repo) to NovaSDK/0.0.x/
+* mkdir Specs/NovaSDK/1.x.x
+* cp (podspec from this repo) to Specs/NovaSDK/1.x.x/
 * commit, push and perform a pull request
 
