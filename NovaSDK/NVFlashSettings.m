@@ -22,7 +22,7 @@
 
 #import "NVFlashSettings.h"
 
-double const NV_DEFAULT_FLASH_TIMEOUT = 1500;
+uint16_t const NV_DEFAULT_FLASH_TIMEOUT = 1500;
 
 @interface NVFlashSettings()
 @property uint8_t warm;
