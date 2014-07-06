@@ -50,7 +50,7 @@ uint16_t const NV_DEFAULT_FLASH_TIMEOUT = 1500;
 
 + (NVFlashSettings *)gentle
 {
-    return [NVFlashSettings customWarm:127 cool:0];
+    return [NVFlashSettings customWarm:31 cool:31];
 }
 
 + (NVFlashSettings *)neutral
@@ -60,7 +60,7 @@ uint16_t const NV_DEFAULT_FLASH_TIMEOUT = 1500;
 
 + (NVFlashSettings *)warm
 {
-    return [NVFlashSettings customWarm:255 cool:0];
+    return [NVFlashSettings customWarm:255 cool:127];
 }
 
 + (NVFlashSettings *)bright
