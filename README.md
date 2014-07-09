@@ -67,9 +67,9 @@ The enum values of `NVFlashServiceStatus` are:
 
 ``` 
 NVFlashServiceDisabled     // BluetoothLE is not available on this device.
-NVFlashServiceIdle         // No devices are connected, we will scan for some soon.
-NVFlashServiceScanning     // No devices are connected, but we're currently scanning for some.
-NVFlashServiceConnecting   // Device(s) found and attempting to establish a connection.
+NVFlashServiceIdle         // No device connected, we will scan soon.
+NVFlashServiceScanning     // No device  onnected, but we're currently scanning.
+NVFlashServiceConnecting   // Device found and attempting to establish a connection.
 NVFlashServiceReady        // Connection to device is ready and waiting for flashes. Yay.
 ```
 
@@ -80,7 +80,7 @@ Basically, `NVFlashServiceReady` is the good one.
 
 ```objective-c
 NVFlashSettings *flashSettings = [NVFlashSettings warm];
-                                               // or off, gentle, bright, custom...
+                                               // or off, gentle, neutral, bright, custom...
 ```
 
 ### Trigger the flash
