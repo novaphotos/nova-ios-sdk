@@ -5,9 +5,9 @@ Official iOS SDK for Nova.
 
 http://www.kickstarter.com/projects/joewalnes/nova-a-slim-wireless-flash-for-better-iphone-photo
 
-https://wantnova.com/
+https://novaphotos.com/
 
-https://wantnova.com/sdk/
+https://novaphotos.com/sdk/
 
 Here's a [test application](NovaSDKTestApp) for exploring the SDK.
 
