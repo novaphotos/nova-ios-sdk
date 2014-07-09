@@ -28,11 +28,6 @@ Initialize the Nova flash service. A good time to do this is in `applicationDidF
 // A good time is applicationDidFinishLaunching:
 NVFlashService *flashService = [NVFlashService new];
 
-// Set which Nova devices to automatically pair with.
-// Options: NVAutoPairClosest, NVAutoPairAll or NVAutoPairNone.
-// This can be changed at any time while the app is running
-// and it will reconnect.
-flashService.autoPairMode = NVAutoPairClosest;
 ```
 
 In `applicationDidBecomeActive:` you should enable the service, which
