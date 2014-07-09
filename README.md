@@ -13,6 +13,17 @@ Here's a [test application](NovaSDKTestApp) for exploring the SDK.
 
 -@joewalnes
 
+Installation
+------------
+
+Easiest way to get the library is via [CocoaPods](http://cocoapods.org/):
+```ruby
+  pod 'NovaSDK'
+```
+
+If that's not your cup of cocoa, then clone the repo and include the source in your project. It has no extra third party dependencies.
+
+You also need to include **Core Bluetooth Framework** in your project dependencies. 
 
 Usage
 -----
