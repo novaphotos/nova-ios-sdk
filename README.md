@@ -91,7 +91,7 @@ Triggering a flash should only be attempted when `flashService.status == NVFlash
   // Check whether flash activated succesfully.
   if (success) {
 
-    // Step 3: Tell camera to take photo.
+    // Step 3: Tell camera to take photo. Wait for focus/exposure to stop adjusting.
     [myCameraAbstraction takePhotoWithCallback:(^ {
 
       // Step 4: When photo has been captured, turn the flash off.
