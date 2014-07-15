@@ -13,6 +13,14 @@ The Nova SDK takes care of:
 * Establishing a connection with a Nova device whenever it is in range. Connection status can be monitored in apps using KVO.
 * At request of app triggering the flash with specified warm and cool LED brightness.
 
+It is the responsibility of the camera app developer (you) to:
+* Enable and disable the SDK when the app becomes active or inactive.
+* Show feedback to the user about the connectivity state (e.g connected, searching, disabled)
+* Allow users to choose flash settings (either pick from a list of predefined presets, or enter custom brightness values)
+* Trigger the flash at time of taking photo.
+
+All of the above are made simple via the SDK.
+
 
 Installation
 ------------
