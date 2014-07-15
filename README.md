@@ -5,6 +5,16 @@ Official iOS SDK for [Nova](https://novaphotos.com/).
 
 -@joewalnes
 
+The SDKs will make it simple to:
+
+Features
+--------
+
+The Nova SDK takes care of:
+* Discovering a nearby Nova device and automatically pairing with it. Users do not need to manually pair.
+* Establishing a connection with a Nova device whenever it is in range. Connection status can be monitored in apps using KVO.
+* At request of app triggering the flash with specified warm and cool LED brightness.
+
 
 Installation
 ------------
@@ -83,6 +93,15 @@ and also in the iPhone camera shutter time, the sequence is coordinated
 by a sequence of callbacks.
 
 Triggering a flash should only be attempted when `flashService.status == NVFlashServiceReady`.
+
+The basic flow of control in a camera app should be:
+
+1. User requests a photo should be taken
+2. Camera app asks SDK to begin flash (with given brightness settings)
+3. SDK calls back to app when the flash is lit
+4. Camera app should wait for focus/exposure/whitebalance to finish adjusting
+5. Camera app should capture photo
+6. When photo is captured, camera app should ask SDK to end flash
 
 ```objective-c
 
