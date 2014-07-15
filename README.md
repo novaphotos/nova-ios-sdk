@@ -5,8 +5,6 @@ Official iOS SDK for [Nova](https://novaphotos.com/).
 
 -@joewalnes
 
-The SDKs will make it simple to:
-
 Features
 --------
 
@@ -83,7 +81,18 @@ Basically, `NVFlashServiceReady` is the good one.
 
 ```objective-c
 NVFlashSettings *flashSettings = [NVFlashSettings warm];
-                                               // or off, gentle, neutral, bright, custom...
+
+// or
+NVFlashSettings *flashSettings = [NVFlashSettings gentle];
+
+// or
+NVFlashSettings *flashSettings = [NVFlashSettings neutral];
+
+// or
+NVFlashSettings *flashSettings = [NVFlashSettings bright];
+
+// or (custom settings in range 0-255)
+NVFlashSettings *flashSettings = [NVFlashSettings customWarm:255 cool:127];
 ```
 
 ### Trigger the flash
