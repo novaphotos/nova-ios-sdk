@@ -1,17 +1,10 @@
 Nova iOS SDK
 ============
 
-Official iOS SDK for Nova.
-
-http://www.kickstarter.com/projects/joewalnes/nova-a-slim-wireless-flash-for-better-iphone-photo
-
-https://novaphotos.com/
-
-https://novaphotos.com/sdk/
-
-Here's a [test application](NovaSDKTestApp) for exploring the SDK.
+Official iOS SDK for [Nova](https://novaphotos.com/).
 
 -@joewalnes
+
 
 Installation
 ------------
@@ -118,3 +111,20 @@ Triggering a flash should only be attempted when `flashService.status == NVFlash
 }];
 ```
 
+Supported Devices
+-----------------
+
+This SDK requires Apple's CoreBluetooth framework that relies on iOS 5 or greater.
+
+Phones need to be equiped with BluetoothLE hardware in order to connect to Nova. Supported devices:
+* iPhone 5s, 5c, 5, 4s
+* iPad Air, Mini, 4, 3
+* iPod Touch 5th generation
+
+If a phone is not supported, the SDK will report it's status as `NVFlashServiceReady`.
+
+
+Example App
+-----------
+
+There's a [test application](NovaSDKTestApp) for exploring the SDK. It doesn't have any camera capabilities but it offers controls for manually exploring the API and triggering the flash with different settings.
