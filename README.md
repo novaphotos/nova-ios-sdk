@@ -3,7 +3,7 @@ Nova iOS SDK
 
 Official iOS SDK for [Nova](https://novaphotos.com/).
 
--@joewalnes
+-[@joewalnes](https://twitter.com/joewalnes)
 
 Features
 --------
@@ -157,7 +157,7 @@ Phones need to be equiped with BluetoothLE hardware in order to connect to Nova.
 * iPad Air, Mini, 4, 3
 * iPod Touch 5th generation
 
-If a phone is not supported, the SDK will report it's status as `NVFlashServiceReady`.
+If a phone is not supported, the SDK will report it's status as `NVFlashServiceDisabled`.
 
 
 Example App
