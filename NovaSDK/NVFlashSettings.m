@@ -1,6 +1,6 @@
 //  The MIT License (MIT)
 //
-//  Copyright (c) 2013 Joe Walnes, Sneaky Squid LLC.
+//  Copyright (c) 2013-2015 Joe Walnes, Sneaky Squid LLC.
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -22,12 +22,12 @@
 
 #import "NVFlashSettings.h"
 
-uint16_t const NV_DEFAULT_FLASH_TIMEOUT = 1500;
+uint16_t const NV_DEFAULT_FLASH_TIMEOUT = 10000;
 
 @interface NVFlashSettings()
-@property uint8_t warm;
-@property uint8_t cool;
-@property uint16_t timeout;
+@property (nonatomic) uint8_t warm;
+@property (nonatomic) uint8_t cool;
+@property (nonatomic) uint16_t timeout;
 @end
 
 @implementation NVFlashSettings
