@@ -1,38 +1,70 @@
 Nova iOS SDK
 ============
 
-Official iOS SDK for [Nova](https://novaphotos.com/).
+Official iOS SDK for [Nova Bluetooth iPhone flash](https://www.novaphotos.com).
 
--[@joewalnes](https://twitter.com/joewalnes)
+*This is version 2 of the SDK which has undergone significant changes from version 1.
+If you are migrating, see migration guide below.*
 
-Features
+What does this do?
+------------------
+
+* Uses BluetoothLE to discover nearby Nova flashes and communicate with them
+* Allows control of multiple flashes (each can be uniquely identified)
+* Monitor signal strength of each flash (e.g. which is closest to the phone)
+* Supports both automatic and manual connect modes
+* Manual connect: clients can explore Nova flashes in range, signal strength and explicitly connect and disconnect as needed
+* Automatic connect: SDK will automatically connect to closest flash (single or multiple flashes) or a previously remembered flash
+* Provides seamless connection user experience from app - the user does *not* need to explictly pair a flash in Bluetooth settings
+* Allow connected flashes to be lit and unlit with user defined brightness and color temperature
+
+What could be done with it?
+---------------------------
+
+Just some ideas...
+
+* Integrate with a custom camera app to provide 
+* Create a flashlight app
+* Morse code beacon
+* Use Nova devices as beacons in a location aware app
+* Some sweet art
+
+Examples
 --------
 
-The Nova SDK takes care of:
-* Discovering a nearby Nova device and automatically pairing with it. Users do not need to manually pair.
-* Establishing a connection with a Nova device whenever it is in range. Connection status can be monitored in apps using KVO.
-* At request of app triggering the flash with specified warm and cool LED brightness.
+A hello world app is provided that simply connects to the closest flash and toggles the light on and off every second.
 
-It is the responsibility of the camera app developer (you) to:
-* Enable and disable the SDK when the app becomes active or inactive.
-* Show feedback to the user about the connectivity state (e.g connected, searching, disabled)
-* Allow users to choose flash settings (either pick from a list of predefined presets, or enter custom brightness values)
-* Trigger the flash at time of taking photo.
-
-All of the above are made simple via the SDK.
-
+* [Swift example](https://github.com/novaphotos/nova-ios-sdk/blob/master/NovaHelloWorldSwift/NovaHelloWorldSwift/AppDelegate.swift)
+* [Objective-C example](https://github.com/novaphotos/nova-ios-sdk/blob/master/NovaHelloWorldObjC/NovaHelloWorldObjC/AppDelegate.m)
 
 Installation
 ------------
 
-Easiest way to get the library is via [CocoaPods](http://cocoapods.org/):
-```ruby
-  pod 'NovaSDK'
+Use [Cocoapods](http://cocoapods.org) and add to your `Podfile`:
+
+```
+pod 'NovaSDK', '~> 2.0.0'
 ```
 
-If that's not your cup of cocoa, then clone the repo and include the source in your project. It has no extra third party dependencies.
+The library is small and its only dependency is the system CoreBluetooth framework.
 
-You also need to include **Core Bluetooth Framework** in your project dependencies. 
+Core types
+----------
+
+* `NVFlashService`: The core service used to discover nearby flashes. Clients can iterate through available nearby flashes, set rules for auto-connection and pause/resume scanning when the app moves to the background.
+
+* `NVFlashServiceDelegate`: Optional delegate protocol that can be implemented by client to receive callbacks when new flashes are discovered, connected or disconnected.
+
+* `NVFlash`: Each discovered flash. Clients can explicitly connect/disconnect, monitor signal strength and connectivity status, and control the light emitted from each flash.
+
+* `NVFlashSettings`: A configuration used when telling the flash to light up. Includes warm LED brightness, cool LED brightness and a timeout to automatically shutdown the flash.
+
+* `NVFlashStatus`: Enum type describing status of a flash.
+   * `Available`: in range and available to be connected to
+   * `Unavailable`: no longer in range
+   * `Connecting`: connection in progress
+   * `Ready`: connected and ready for use
+   * `Busy`: connected but currently processing an existing command
 
 Usage
 -----
@@ -42,19 +74,40 @@ Usage
 Initialize the Nova flash service. A good time to do this is in `applicationDidFinishLaunching:`.
 
 ```objective-c
-#import "NVFlashService.h"
+// Objective-C
 
 // Setup. Do this when app starts.
 // A good time is applicationDidFinishLaunching:
 NVFlashService *flashService = [NVFlashService new];
 
+// Optionally, set a delegate implementing NVFlashServiceDelegate to be
+// notified of flash discovery/connection events.
+flashService.delegate = self;
+```
+
+```swift
+// Swift
+
+// Setup. Do this when app starts.
+// A good time is applicationDidFinishLaunching:
+let flashService = NVFlashService()
+
+// Optionally, set a delegate implementing NVFlashServiceDelegate to be
+// notified of flash discovery/connection events.
+flashService.delegate = self
 ```
 
 In `applicationDidBecomeActive:` you should enable the service, which
 activates the Bluetooth radio and begins scanning:
 
 ```objective-c
+// Objective-C
 [flashService enable];
+```
+
+```swift
+// Swift
+flashService.enable()
 ```
 
 In `applicationWillResignActive:` you should disable the service, which
@@ -62,105 +115,406 @@ shuts down the BluetoothLE scanning, conserving the battery life of
 both the iPhone and Nova:
 
 ```objective-c
+// Objective-C
 [flashService disable];
 ```
 
-
-### Monitoring connection status
-
-You can read the status of `flashService.status` at any time.
-
-You can observe when the status changes, using standard Objective-C key-value-observing.
-
-The enum values of `NVFlashServiceStatus` are:
-
-``` 
-NVFlashServiceDisabled     // BluetoothLE is not available on this device.
-NVFlashServiceIdle         // No device connected, we will scan soon.
-NVFlashServiceScanning     // No device  onnected, but we're currently scanning.
-NVFlashServiceConnecting   // Device found and attempting to establish a connection.
-NVFlashServiceReady        // Connection to device is ready and waiting for flashes. Yay.
+```swift
+// Swift
+flashService.disable()
 ```
 
-Basically, `NVFlashServiceReady` is the good one.
+### Discovering nearby flashes
 
+While the flash service is enabled it will automatically perform Bluetooth scans to discover
+nearby flashes.
 
-### Choosing the flash temperature/brightness settings
+There are two options for knowing which flashes are in range:
+1. Periodically at the contents of `flashService.flashes` or `flashService.connectedFlashes` array
+2. Receive a callback by implementing the `NVFlashServiceDelegate` protocol
+
+#### Iterating over flashes array
+
+The `NVFlashService.flashes` array contains `NVFlash` objects and can be queried at any time and returns all flashes that have been discovered.
+
+The `NVFlashService.connectedFlashes` is similar except it contains the subset of flashes that are currently connected.
 
 ```objective-c
-NVFlashSettings *flashSettings = [NVFlashSettings warm];
-
-// or
-NVFlashSettings *flashSettings = [NVFlashSettings gentle];
-
-// or
-NVFlashSettings *flashSettings = [NVFlashSettings neutral];
-
-// or
-NVFlashSettings *flashSettings = [NVFlashSettings bright];
-
-// or (custom settings in range 0-255)
-NVFlashSettings *flashSettings = [NVFlashSettings customWarm:255 cool:127];
+// Objective-C
+for (id<NVFlash> flash in flashService.flashes) { // alternatively flashService.connectedFlashes
+  NSLog(@"flash: identifier=%@, status=%@, signalStrength=%f",
+        flash.identifier,                  // unique ID assigned to each flash
+        NVFlashStatusString(flash.status), // connectivity status
+        flash.signalStrength);             // value from 0.0 (weakest) to 1.0 (strongest)
+}
 ```
 
-### Trigger the flash
+```swift
+// Swift
+for flash in flashService.flashes as [NVFlash] { // alternatively flashService.connectedFlashes
+  NSLog("flash: identifier=%@, status=%@, signalStrength=%f",
+        flash.identifier,                  // unique ID assigned to each flash
+        NVFlashStatusString(flash.status), // connectivity status
+        flash.signalStrength)              // value from 0.0 (weakest) to 1.0 (strongest)
+}
+```
 
-Because there can be slight (and hard to predict) latencies in Bluetooth
-and also in the iPhone camera shutter time, the sequence is coordinated
-by a sequence of callbacks.
+#### Receiving delegate callbacks
+
+Optionally, a client may implement the `NVFlashServiceDelegate` protocol and set it as the `flashService.delegate` to receive callbacks as discovery and connection events occur.
+
+```objective-c
+// Objective-C
+
+// Implement NVFlashServiceDelegate protocol. All methods are optional.
+
+- (void) flashServiceAddedFlash:(id<NVFlash>)flash {
+  NSLog(@"added flash %@", flash.identifier);
+}
+
+- (void) flashServiceRemovedFlash:(id<NVFlash>)flash {
+  NSLog(@"removed flash %@", flash.identifier);
+}
+
+- (void) flashServiceConnectedFlash:(id<NVFlash>)flash {
+  NSLog(@"connected flash %@", flash.identifier);
+}
+
+- (void) flashServiceDisconnectedFlash:(id<NVFlash>)flash {
+  NSLog(@"disconnected flash %@", flash.identifier);
+}
+
+```
+
+```swift
+// Swift
+
+// Implement NVFlashServiceDelegate protocol. All methods are optional.
+
+func flashServiceAddedFlash(flash: NVFlash) {
+  NSLog("added flash %@", flash.identifier)
+}
+
+func flashServiceRemovedFlash(flash: NVFlash) {
+  NSLog("removed flash %@", flash.identifier)
+}
+
+func flashServiceConnectedFlash(flash: NVFlash) {
+  NSLog("connected flash %@", flash.identifier)
+}
+
+func flashServiceDisconnectedFlash(flash: NVFlash) {
+  NSLog("disconnected flash %@", flash.identifier)
+}
+```
+
+### Connecting to flashes
+
+There are two ways to connect to flashes:
+1. Manually call `connect`/`disconnect` on `NVFlash` instances of interest. This gives the most control.
+2. Enable `autoConnect` and allow the flash service to automatically connect to the closest Nova for you. This is the simplest.
+
+#### Auto connect
+
+This is the recommend approach as it lets the flash service do the hard work for you.
+
+When `autoConnect` is enabled,the flash service will periodically attempt to connect to a suitable Nova (or multiple Novas). Clients will know when a Nova is connected by looking at the `flashService.connectedFlashes` array or handling `flashServiceConnectedFlash:`/`flashServiceDisconnectedFlash:` callbacks.
+
+##### Auto connect to the closest Nova
+
+```objective-c
+// Objective-C
+
+// call this after initializing NVFlashService
+flashService.autoConnect = YES;
+```
+
+```swift
+// Swift
+
+// call this after initializing NVFlashService
+flashService.autoConnect = true
+```
+
+The default auto connect rules will attempt to connect to:
+* just **1** Nova at a time
+* the Nova with the strongest signal strength
+* from the set **all** discovered Novas with signal strength >0.1 (10%)
+
+##### Auto connect to multiple Novas
+
+The above rules can be changed. For example:
+
+```objective-c
+// Objective-C
+
+flashService.autoConnectMaxDevices = 4;          // connect to the 4 closest Novas
+flashService.autoConnectMinSignalStrength = 0.5; // require signal strength >=50%
+```
+
+```swift
+// Swift
+
+flashService.autoConnectMaxDevices = 4           // connect to the 4 closest Novas
+flashService.autoConnectMinSignalStrength = 0.5  // require signal strength >=50%
+```
+
+##### Remember a Nova and only auto connect to that
+
+In some cases clients may wish to remember a flash and only reconnect to that same flash (or flashes) in the future.
+
+To do this, clients should store a list of `NVFlash.identifier` values. These are strings that could be persisted locally. Each string is unique for a given flash.
+
+Upon reconnecting:
+
+```objective-c
+// Objective-C
+
+// Only auto connect to specific flashes.
+// Identifiers are strings previously obtained from NVFlash.identifier
+flashService.autoConnectWhiteList = @[identifier1, identifier2];
+```
+```swift
+// Swift
+
+// Only auto connect to specific flashes.
+// Identifiers are strings previously obtained from NVFlash.identifier
+flashService.autoConnectWhiteList = [identifier1, identifier2]
+```
+
+#### Manual connection
+
+For clients that want more control over which Novas to connect to, the individual `NVFlash` instances can be iterated over (see above) and explicitly connected/disconnected at appropriate times.
+
+**Important**: Do not attempt to manually connect to flashes if `autoConnect` is enabled. If in doubt use `autoConnect` instead (see above) - it's much simpler.
+
+```objective-c
+// Objective-C
+
+id<NVFlash> flash = /* whichever flash instance */;
+
+// to connect
+[flash connect];
+
+// to disconnect
+[flash disconnect];
+```
+
+```objective-c
+// Objective-C
+
+let flash: NVFlash = /* whichever flash instance */
+
+// to connect
+flash.connect()
+
+// to disconnect
+flash.disconnect()
+```
+
+#### Lighting up Nova
+
+Nova contains banks of LEDs, half of which have a warm white tint and the other half have a cool white tint. The brightness of both banks can be controlled individually for different variations of brightness and color temperature.
+
+##### Choosing brightness and color temperature
+
+The `NVFlashSettings` object holds the desired brightness/temperature settings. The fields are:
+* `warm`: Brightness of warm LEDs from 0 (off) to 255 (full brightness)
+* `cool`: Brightness of cool LEDs from 0 (off) to 255 (full brightness)
+
+For convenience, there are presets used for commonly used settings:
+
+```objective-c
+// Objective-C
+
+NSFlashSettings *settings = [NFFlashSettings bright];
+
+// or...
+NSFlashSettings *settings = [NFFlashSettings gentle];
+NSFlashSettings *settings = [NFFlashSettings neutral];
+NSFlashSettings *settings = [NFFlashSettings warm];
+NSFlashSettings *settings = [NFFlashSettings customWarm:123, cool:201];
+```
+
+```swift
+// Swift
+
+let settings = NFFlashSettings.bright()
+
+// or...
+let settings = NFFlashSettings.gentle()
+let settings = NFFlashSettings.neutral()
+let settings = NFFlashSettings.warm()
+let settings = NFFlashSettings.custom()
+let settings = NFFlashSettings.customWarm(123, cool: 201)
+```
+
+##### Turning on the lights
+
+Once the settings (see above) have been defined, use `beginFlash` to send a message to the flash to activate the LEDs.
+
+*Important*: Due to the nature of BluetoothLE, there is a slight delay between making this call and the LEDs actually lighting up. If timing is important, you can pass a callback that will be called when the flash has acknowledged that the LEDs are on.
+
+```objective-c
+// Objective-C
+
+id<NVFlash> flash = /* whichever flash you want to control */;
+
+// Fire and forget. Flash typically lights up within 100-200 milliseconds.
+[flash beginFlash:settings];
+
+// Alternatively, fire and pass a callback to know when flash has responded
+[flash beginFlash:settings withCallback:^(BOOL success) {
+  if (success) {
+    NSLog(@"Flash is now lit up");
+  } else {
+    NSLog(@"Flash failed to light. Try charging it.");
+  }
+}];
+```
+
+```swift
+// Swift
+
+let flash: NVFlash = // whichever flash you want to control
+
+// Fire and forget. Flash typically lights up within 100-200 milliseconds.
+flash.beginFlash(settings)
+
+// Alternatively, fire and pass a callback to know when flash has responded
+flash.beginFlash(settings) {success in
+  if (success) {
+    NSLog("Flash is now lit up")
+  } else {
+    NSLog("Flash failed to light. Try charging it.")
+  }
+}
+```
+
+##### Turning off the lights
+
+To turn off the lights, call `endFlash`.
+
+```objective-c
+// Objective-C
+
+[flash.endFlash];
+```
+
+```swift
+// Swift
+
+flash.endFlash()
+```
+
+Like `beginFlash`, you may also pass a callback to `endFlash` to get notified when the flash has acknowledged that it's now off.
+
+##### Flash timeouts
+
+The Nova hardware includes a timeout feature to automatically turn the flash off after a certain amount of time. This is a safety mechanism to ensure that if an app crashes or other unexpected events occur on the phone, the flash will not remain on and drain all the battery.
+
+The **default timeout is 10 seconds**. This is approximate because Nova does not contain a high resolution timer. In reality it will be accurate with about 20% tolerance.
+
+To change the timeout, you can modify the `NVFlashSettings`.
+
+```objective-c
+// Objective-C
+
+NVFlashSettings *settings = [[NVFlashSettings warm] flashSettingsWithTimeout:20000)]; // in milliseconds
+```
+
+```swift
+// Swift
+
+let settings = NVFlashSettings.warm().flashSettingsWithTimeout(20000) // in milliseconds
+```
+
+### Putting it all together
+
+Here's that hello world app again. It demonstrates initializing the service, auto connecting to the closest Nova, listening to connect/disconnect events and controlling the light.
+
+* [Swift example](https://github.com/novaphotos/nova-ios-sdk/blob/master/NovaHelloWorldSwift/NovaHelloWorldSwift/AppDelegate.swift)
+* [Objective-C example](https://github.com/novaphotos/nova-ios-sdk/blob/master/NovaHelloWorldObjC/NovaHelloWorldObjC/AppDelegate.m)
+
+Coordinating a camera flash
+---------------------------
+
+If you are integrating Nova into a camera app, here is the basic flow of events for taking a photo.
 
 Triggering a flash should only be attempted when `flashService.status == NVFlashServiceReady`.
 
-The basic flow of control in a camera app should be:
-
-1. User requests a photo should be taken
-2. Camera app asks SDK to begin flash (with given brightness settings)
-3. SDK calls back to app when the flash is lit
-4. Camera app should wait for focus/exposure/whitebalance to finish adjusting
-5. Camera app should capture photo
-6. When photo is captured, camera app should ask SDK to end flash
-
 ```objective-c
+// Objective-C
 
 // Step 1: Tell flash to activate.
-[flashService beginFlash:flashSettings withCallback:^ (BOOL success) {
-
+[flash beginFlash:settings withCallback:^ (BOOL success) {
+  
   // Step 2: This callback is called when the flash has acknowledged that
   //         it is lit.
-
+  
   // Check whether flash activated succesfully.
   if (success) {
-
-    // Step 3: Tell camera to take photo. Wait for focus/exposure to stop adjusting.
+    
+    // Step 3: Tell camera to take photo.
     [myCameraAbstraction takePhotoWithCallback:(^ {
-
+      
       // Step 4: When photo has been captured, turn the flash off.
       [flashService:endFlashWithCallback:(^ {
         // Step 5: Done. Ready to take another photo.
       })];
-
+        
     })];
-
+        
   } else {
     // Error: flash could not be triggered.
   }
 }];
 ```
 
-Supported Devices
------------------
+```swift
+// Swift
 
-This SDK requires Apple's CoreBluetooth framework that relies on iOS 5 or greater.
+// Step 1: Tell flash to activate.
+flash.beginFlash(settings) { success in
 
-Phones need to be equiped with BluetoothLE hardware in order to connect to Nova. Supported devices:
-* iPhone 5s, 5c, 5, 4s
-* iPad Air, Mini, 4, 3
-* iPod Touch 5th generation
+  // Step 2: This callback is called when the flash has acknowledged that
+  //         it is lit.
+  
+  // Check whether flash activated succesfully.
+  if (success) {
+    
+    // Step 3: Tell camera to take photo.
+    myCameraAbstraction.takePhotoWithCallback() {
+      
+      // Step 4: When photo has been captured, turn the flash off.
+      flashService.endFlash() { success in
+        // Step 5: Done. Ready to take another photo.
+      }
+        
+    }
+        
+  } else {
+    // Error: flash could not be triggered.
+  }
+}
+```
 
-If a phone is not supported, the SDK will report it's status as `NVFlashServiceDisabled`.
+Hints and tips. Tints and hips.
+-------------------------------
 
+### Observing flash property changes
 
-Example App
------------
+Standard [key-value observing](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/KeyValueObserving/KeyValueObserving.html) can be used on the `NVFlash` instance fields (e.g. `status`, `signalStrength`,  `lit`) to monitor when something about the flash changes. It is recommend to add/remove observers in either `flashServiceFlashAdded:`/`flashServiceFlashRemoved:` or `flashServiceConnectedFlash:`/`flashServiceDisconnectedFlash:` delegate callbacks.
 
-There's a [test application](NovaSDKTestApp) for exploring the SDK. It doesn't have any camera capabilities but it offers controls for manually exploring the API and triggering the flash with different settings.
+### Threading
+
+This library should only ever be called from the main thread. All calls are fast and non-blocking.
+
+### Short light burts
+
+For short bursts of light, it's often simpler to use a timeout on `NVFlashSettings` instead of explicitly calling `endFlash`.
+
+Need help?
+----------
+
+The Nova hardware and software was created by [Joe Walnes](https://twitter.com/joewalnes). For help email hello@novaphotos.com or raise a GitHub issue.
