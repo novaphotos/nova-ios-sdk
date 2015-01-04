@@ -6,7 +6,7 @@ Nova iOS SDK
 Official iOS SDK for [Nova Bluetooth iPhone flash](https://www.novaphotos.com).
 
 *This is version 2 of the SDK which has undergone [significant changes](CHANGES.md) from version 1.
-If you are migrating, see migration guide below.*
+If you are migrating, see [V2 migration guide](MIGRATING-V2.md).*
 
 What does this do?
 ------------------
@@ -250,14 +250,14 @@ The above rules can be changed. For example:
 ```objective-c
 // Objective-C
 
-flashService.autoConnectMaxDevices = 4;          // connect to the 4 closest Novas
+flashService.autoConnectMaxFlashes = 4;          // connect to the 4 closest Novas
 flashService.autoConnectMinSignalStrength = 0.5; // require signal strength >=50%
 ```
 
 ```swift
 // Swift
 
-flashService.autoConnectMaxDevices = 4           // connect to the 4 closest Novas
+flashService.autoConnectMaxFlashes = 4           // connect to the 4 closest Novas
 flashService.autoConnectMinSignalStrength = 0.5  // require signal strength >=50%
 ```
 
