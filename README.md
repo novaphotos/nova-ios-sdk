@@ -3,7 +3,7 @@ Nova iOS SDK
 
 Official iOS SDK for [Nova Bluetooth iPhone flash](https://www.novaphotos.com).
 
-*This is version 2 of the SDK which has undergone significant changes from version 1.
+*This is version 2 of the SDK which has undergone [significant changes](CHANGES.md) from version 1.
 If you are migrating, see migration guide below.*
 
 What does this do?
