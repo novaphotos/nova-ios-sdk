@@ -1,6 +1,6 @@
 //  The MIT License (MIT)
 //
-//  Copyright (c) 2013 Joe Walnes, Sneaky Squid LLC.
+//  Copyright (c) 2013-2015 Joe Walnes, Sneaky Squid LLC.
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,23 +21,22 @@
 //  THE SOFTWARE.
 
 #import <Foundation/Foundation.h>
-#import "NVFlashSettings.h"
+#import <CoreBluetooth/CoreBluetooth.h>
+#import "NVFlash.h"
+#import "NVFlashService.h"
 
-typedef void (^NVTriggerCallback)(BOOL);
+extern NSString* const kNovaV1ServiceUUID;
 
-@protocol NVTriggerFlash <NSObject>
-
-@property (readonly) bool commandInProgress;
-
-- (void) beginFlash:(NVFlashSettings*)settings;
-
-- (void) beginFlash:(NVFlashSettings*)settings withCallback:(NVTriggerCallback)callback;
-
-- (void) endFlash;
-
-- (void) endFlashWithCallback:(NVTriggerCallback)callback;
-
-- (void) pingWithCallback:(NVTriggerCallback)callback;
-
+// Used internally.
+@interface NVCommand : NSObject
+@property (nonatomic) uint8_t requestId;
+@property (nonatomic) NSString* msg;
+@property (nonatomic, strong) NVTriggerCallback callback;
 @end
 
+
+@interface NVNovaV1Flash : NSObject <NVBluetoothFlash, CBPeripheralDelegate>
+
+- (id) initWithPeripheral:(CBPeripheral*) peripheral withCentralManager:(CBCentralManager*) centralManager;
+
+@end

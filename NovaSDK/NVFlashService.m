@@ -1,6 +1,6 @@
 //  The MIT License (MIT)
 //
-//  Copyright (c) 2013 Joe Walnes, Sneaky Squid LLC.
+//  Copyright (c) 2013-2015 Joe Walnes, Sneaky Squid LLC.
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -21,26 +21,41 @@
 //  THE SOFTWARE.
 
 #import "NVFlashService.h"
+#import "NVNovaV1Flash.h"
+
+static NSTimeInterval const scanInterval = 4; // How long between scans, in seconds.
+static NSTimeInterval const scanDuration = 0.9; // How long to scan for, in seconds.
+static float const autoConnectDefaultMinSignalStrength = 0.1;
+static void *statusUpdateContext = &statusUpdateContext;
+
+NSString *NVFlashServiceStatusString(NVFlashServiceStatus status)
+{
+    switch (status) {
+        case NVFlashServiceDisabled:
+            return @"Disabled";
+        case NVFlashServiceIdle:
+            return @"Idle";
+        case NVFlashServiceScanning:
+            return @"Scanning";
+    }
+}
 
 @interface NVFlashService()
-@property NVFlashServiceStatus status; // Override interface declaration so we can change the value.
-@end
-
-@implementation NVCommand
+// Override interface declaration so we can change the value.
+@property (nonatomic) NVFlashServiceStatus status;
 @end
 
 @implementation NVFlashService
+{
+    BOOL enabled;
+    CBCentralManager *central;
+    NSTimer *startScanTimer;
+    NSTimer *stopScanTimer;
+    NSMutableArray *allFlashes; // array of id<NVBluetoothFlash>
+    NSMutableDictionary *rssiSamples; // dictionary of identifier (NSString) -> NSMutableArray of NSNumber
+}
 
-
-static NSString* const kServiceUUID = @"FFF0";
-static NSString* const kRequestCharacteristicUUID = @"FFF3";
-static NSString* const kResponseCharacteristicUUID = @"FFF4";
-
-static NSTimeInterval const scanInterval = 1; // How long between scans, in seconds.
-static NSTimeInterval const scanDuration = 0.5; // How long to scan for, in seconds.
-static NSTimeInterval const ackTimeout = 2; // How long before we give up waiting for ack from device, in seconds.
-
-#pragma mark Initialization
+#pragma mark - Initialization
 
 - (id) init
 {
@@ -48,14 +63,19 @@ static NSTimeInterval const ackTimeout = 2; // How long before we give up waitin
     if (self) {
         enabled = NO;
         central = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
-        awaitingSend = [NSMutableArray new];
+        allFlashes = [NSMutableArray array];
+        self.autoConnect = NO;
+        self.autoConnectMaxFlashes = 1;
+        self.autoConnectMinSignalStrength = autoConnectDefaultMinSignalStrength;
+        self.autoConnectWhitelist = [NSArray array];
+        self.autoConnectBlacklist = [NSArray array];
     }
     return self;
 }
 
 // Callback from [CBCentralManager initWithDelegate:queue:]
 // Tells us whether we have access to the Bluetooth stack (i.e. running on a suitable device).
-- (void)centralManagerDidUpdateState:(CBCentralManager *)cm
+- (void) centralManagerDidUpdateState:(CBCentralManager *)cm
 {
     if (central.state == CBCentralManagerStatePoweredOn) {
         if (enabled) {
@@ -66,7 +86,20 @@ static NSTimeInterval const ackTimeout = 2; // How long before we give up waitin
     }
 }
 
-#pragma mark NFFlashService lifecycle implementation
+#pragma mark - Flash accessors
+
+- (NSArray*) flashes {
+    return [NSArray arrayWithArray:allFlashes];
+}
+
+- (NSArray*) connectedFlashes {
+    return [allFlashes filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(id obj, NSDictionary *bindings) {
+        id<NVFlash> flash = obj;
+        return flash.status == NVFlashReady || flash.status == NVFlashBusy;
+    }]];
+}
+
+#pragma mark - Lifecycle implementation
 
 - (void) enable
 {
@@ -109,21 +142,76 @@ static NSTimeInterval const ackTimeout = 2; // How long before we give up waitin
     startScanTimer = nil;
     stopScanTimer = nil;
 
-    [self disconnect];
-
+    for (long i = allFlashes.count - 1; i >= 0; i--) {
+        id<NVBluetoothFlash> flash = allFlashes[i];
+        [flash disconnect];
+        [self unregisterFlash: flash];
+    }
+    
     self.status = NVFlashServiceDisabled;
 }
 
-- (void) refresh
+- (void)registerFlash:(id<NVBluetoothFlash>) flash
 {
-    if (enabled) {
-        [self disable];
-        [self enable];
+    [allFlashes addObject:flash];
+    if ([self.delegate respondsToSelector:@selector(flashServiceAddedFlash:)]) {
+        [self.delegate flashServiceAddedFlash:flash];
+    }
+    if ((flash.status == NVFlashReady || flash.status == NVFlashBusy)
+        && [self.delegate respondsToSelector:@selector(flashServiceConnectedFlash:)]) {
+        [self.delegate flashServiceConnectedFlash:flash];
+    }
+    [flash addObserver: self
+            forKeyPath: @"status"
+               options: (NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld)
+               context: statusUpdateContext];
+}
+
+- (void)unregisterFlash:(id<NVBluetoothFlash>) flash
+{
+    [flash removeObserver: self forKeyPath:@"status" context: statusUpdateContext];
+    [flash disconnect];
+    [allFlashes removeObject:flash];
+    if ((flash.status == NVFlashReady || flash.status == NVFlashBusy)
+        && [self.delegate respondsToSelector:@selector(flashServiceDisconnectedFlash:)]) {
+        [self.delegate flashServiceDisconnectedFlash:flash];
+    }
+    if ([self.delegate respondsToSelector:@selector(flashServiceRemovedFlash:)]) {
+        [self.delegate flashServiceRemovedFlash:flash];
     }
 }
 
+- (id<NVBluetoothFlash>) lookupFlash:(CBPeripheral*) peripheral
+{
+    return (id<NVBluetoothFlash>)[self flashWithIdentifier:peripheral.identifier.UUIDString];
+}
 
-#pragma mark Scan for devices in range.
+- (void)observeValueForKeyPath:(NSString *)keyPath
+                      ofObject:(id)object
+                        change:(NSDictionary *)change
+                       context:(void *)context
+{
+    if (context == statusUpdateContext) {
+        id<NVFlash> flash = object;
+        NVFlashStatus oldStatus = [[change valueForKey:NSKeyValueChangeOldKey] integerValue];
+        NVFlashStatus newStatus = [[change valueForKey:NSKeyValueChangeNewKey] integerValue];
+        bool wasConnected = oldStatus == NVFlashReady || oldStatus == NVFlashBusy;
+        bool isConnected = newStatus == NVFlashReady || newStatus == NVFlashBusy;
+        if (wasConnected != isConnected) {
+            if (isConnected) {
+                if ([self.delegate respondsToSelector:@selector(flashServiceConnectedFlash:)]) {
+                    [self.delegate flashServiceConnectedFlash:flash];
+                }
+            } else {
+                if ([self.delegate respondsToSelector:@selector(flashServiceDisconnectedFlash:)]) {
+                    [self.delegate flashServiceDisconnectedFlash:flash];
+                }
+            }
+        }
+    }
+}
+
+#pragma mark - Scan for devices in range.
 
 // Periodically called by timer.
 - (void)startScan
@@ -140,11 +228,12 @@ static NSTimeInterval const ackTimeout = 2; // How long before we give up waitin
         return; // Either BT is disabled, or we're already attempting to connect.
     }
 
-    strongestSignalPeripheral = nil;
-    strongestSignalRSSI = nil;
-
+    // Clear RSSI samples
+    rssiSamples = [NSMutableDictionary dictionary];
+    
+    NSDictionary *options = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber  numberWithBool:YES], CBCentralManagerScanOptionAllowDuplicatesKey, nil];
     // Calls [self centralManager:didDiscoverPeripheral:advertisementData:RSSI:] when peripheral discovered.
-    [central scanForPeripheralsWithServices: @[[CBUUID UUIDWithString:kServiceUUID]] options: nil];
+    [central scanForPeripheralsWithServices: @[[CBUUID UUIDWithString:kNovaV1ServiceUUID]] options: options];
 
     self.status = NVFlashServiceScanning;
     
@@ -165,56 +254,74 @@ static NSTimeInterval const ackTimeout = 2; // How long before we give up waitin
 {
     NSString *name = peripheral.name;
     
-    BOOL isNova = ([name isEqual:@"Nova"] || [name isEqual:@"Noon"] || [name isEqual:@"S-Power"]);
-    
-    if (!isNova) {
+    if (![name isEqual:@"Nova"]) {
         return;
     }
     
-    // TODO: Support pairing to multiple devices.
+    id<NVBluetoothFlash> flash = [self lookupFlash:peripheral];
+    
+    if (flash == nil) {
+        flash = [[NVNovaV1Flash alloc] initWithPeripheral:peripheral withCentralManager:central];
+        [self registerFlash:flash];
+    }
+    
+    NSMutableArray *samplesForDevice = rssiSamples[flash.identifier];
+    if (samplesForDevice == nil) {
+        samplesForDevice = [NSMutableArray array];
+        rssiSamples[flash.identifier] = samplesForDevice;
+    }
+    [samplesForDevice addObject:rssi];
+}
 
-    // If this device has a stronger signal than previously scanned devices, it's our best bet.
-    if (strongestSignalPeripheral == nil || rssi > strongestSignalRSSI) {
-        strongestSignalPeripheral = peripheral;
-        strongestSignalRSSI = rssi;
+- (void) updateAllRssiValues
+{
+    for (id<NVBluetoothFlash> flash in allFlashes) {
+        if (flash.status == NVFlashAvailable || flash.status == NVFlashUnavailable) {
+            NSNumber* rssi = [self averageRssi:rssiSamples[flash.identifier]];
+            [flash setRssi:rssi];
+        }
+        // else: peripheral is no longer appearing in scan and so is responsible for setting its own RSSI.
+    }
+    if (self.autoConnect) {
+        [self performAutoConnect];
+    }
+}
+
+- (NSNumber*) averageRssi:(NSMutableArray*) samples;
+{
+    if (samples == nil) {
+        return @(RSSI_UNAVAILABLE);
+    }
+    
+    float sum = 0;
+    int count = 0;
+    for (NSNumber *sample in samples) {
+        if (sample.integerValue != RSSI_UNAVAILABLE) {
+            sum += sample.floatValue;
+            count++;
+        }
+    }
+    
+    if (count == 0) {
+        return @(RSSI_UNAVAILABLE);
+    } else {
+        return @(sum / (float)count);
     }
 }
 
 // Periodicaly called by timer, sometime after startScan.
 - (void)stopScan
 {
+    [self updateAllRssiValues];
+    
     [central stopScan];
     [stopScanTimer invalidate];
     stopScanTimer = nil;
-    
-    CBPeripheral* peripheral = strongestSignalPeripheral;
-    strongestSignalPeripheral = nil;
-    strongestSignalRSSI = nil;
-    
-    if (peripheral == nil) {
-        self.status = NVFlashServiceIdle;
-    } else {
-        [self connect:peripheral];
-    }
+
+    self.status = NVFlashServiceIdle;
 }
 
-
-#pragma mark Establish connection to device
-
-
-- (void)connect:(CBPeripheral *)peripheral
-{
-    // Connects to the discovered peripheral.
-    // Calls [self centralManager:didFailToConnectPeripheral:error:]
-    // or [self centralManager:didConnectPeripheral:]
-    peripheral.delegate = self;
-    [central connectPeripheral:peripheral options:nil];
-    
-    // Hang on to it so it isn't cleaned up.
-    activePeripheral = peripheral;
-    
-    self.status = NVFlashServiceConnecting;
-}
+#pragma mark - Establish connection to device
 
 // Callback from [CBCentralManager connectPeripheral:options:]
 // Failed to connect.
@@ -222,11 +329,11 @@ static NSTimeInterval const ackTimeout = 2; // How long before we give up waitin
 didFailToConnectPeripheral:(CBPeripheral *)peripheral
                      error:(NSError *)error
 {
-    if (activePeripheral != peripheral) {
-        return;
-    }
+    id<NVBluetoothFlash> flash = [self lookupFlash:peripheral];
 
-    [self disconnect];
+    if (flash != nil) {
+        [flash disconnect];
+    }
 }
 
 // Callback from [CBCentralManager connectPeripheral:options:]
@@ -234,307 +341,82 @@ didFailToConnectPeripheral:(CBPeripheral *)peripheral
 - (void) centralManager:(CBCentralManager *)cm
    didConnectPeripheral:(CBPeripheral *)peripheral
 {
-    if (activePeripheral != peripheral) {
-        return;
+    id<NVBluetoothFlash> flash = [self lookupFlash:peripheral];
+    
+    if (flash != nil) {
+        [flash discoverServices];
     }
-
-    // Asks the peripheral to discover the service
-    // Calls [self peripheral:didDiscoverServices:]
-    [peripheral discoverServices:@[ [CBUUID UUIDWithString:kServiceUUID] ]];
 }
 
 - (void) centralManager:(CBCentralManager *)cm
 didDisconnectPeripheral:(CBPeripheral *)peripheral
                   error:(NSError *)error
 {
-    if (activePeripheral != peripheral) {
-        return;
+    id<NVBluetoothFlash> flash = [self lookupFlash:peripheral];
+
+    if (flash != nil) {
+        [flash disconnect];
     }
-    
-    [self disconnect];
 }
 
-// Callback from [CBPeripheral discoverServices:]
-- (void) peripheral:(CBPeripheral *)peripheral
-didDiscoverServices:(NSError *)error
-{
-    if (activePeripheral != peripheral) {
-        return;
-    }
+#pragma mark - Access available flashes (public)
 
-    if (error) {
-        [self disconnect];
-        return;
+- (id<NVFlash>) flashWithIdentifier:(NSString*)identifier
+{
+    for (id<NVFlash> flash in allFlashes) {
+        if ([flash.identifier isEqualToString:identifier]) {
+            return flash;
+        }
     }
-    
-    for (CBService* service in peripheral.services) {
-        if ([service.UUID isEqual:[CBUUID UUIDWithString:kServiceUUID]]) {
-            // Found our service
-            // Discovers the characteristics for the service
-            // Calls [self peripheral:didDiscoverCharacteristicsForService:error:]
-            NSArray *characteristics = @[[CBUUID UUIDWithString:kRequestCharacteristicUUID],
-                                         [CBUUID UUIDWithString:kResponseCharacteristicUUID]];
-            [peripheral discoverCharacteristics:characteristics forService:service];
-            return;
+    return nil;
+}
+
+- (void) disconnectAll
+{
+    for (id<NVFlash> flash in allFlashes) {
+        [flash disconnect]; // no-op on non-connected flashes
+    }
+}
+
+#pragma mark - Autoconnect
+
+- (void) performAutoConnect
+{
+    // Step 1: ignore any unavailable flashes
+    NSMutableArray *filteredFlashes = [NSMutableArray arrayWithCapacity:allFlashes.count];
+    for (id<NVFlash> flash in allFlashes) {
+        if (flash.status != NVFlashUnavailable) {
+            [filteredFlashes addObject:flash];
         }
     }
     
-    [self disconnect];
-}
+    // Step 2: sort remaining flashes by signal strength
+    NSArray *sortedFlashes = [filteredFlashes sortedArrayUsingDescriptors:[NSArray arrayWithObject:
+                                                                           [NSSortDescriptor sortDescriptorWithKey: @"signalStrength"
+                                                                                                         ascending: NO]]];
 
-// Callback from [CBPeripheral discoverCharacteristics:forService]
-- (void)                  peripheral:(CBPeripheral *)peripheral
-didDiscoverCharacteristicsForService:(CBService *)service
-                               error:(NSError *)error
-{
-    if (activePeripheral != peripheral || ![service.UUID isEqual:[CBUUID UUIDWithString:kServiceUUID]]) {
-        return;
-    }
-
-    if (error) {
-        [self disconnect];
-        return;
-    }
+    // Step 3: iterate through filtered sorted flashes...
+    int connectedCount = 0;
+    for (id<NVFlash> flash in sortedFlashes) {
     
-    for (CBCharacteristic* characteristic in service.characteristics) {
-        if ([characteristic.UUID isEqual:[CBUUID UUIDWithString:kRequestCharacteristicUUID]]) {
-            requestCharacteristic = characteristic;
+        bool shouldBeConnected = connectedCount < self.autoConnectMaxFlashes
+            && flash.signalStrength >= self.autoConnectMinSignalStrength
+            && (self.autoConnectWhitelist == nil || self.autoConnectWhitelist.count == 0 || [self.autoConnectWhitelist containsObject:flash.identifier])
+            && (self.autoConnectBlacklist == nil || ![self.autoConnectBlacklist containsObject:flash.identifier]);
+
+        // Is flash already connected?
+        bool isConnected = flash.status == NVFlashConnecting || flash.status == NVFlashReady || flash.status == NVFlashBusy;
+        
+        if (isConnected) {
+            connectedCount++;
         }
-        if ([characteristic.UUID isEqual:[CBUUID UUIDWithString:kResponseCharacteristicUUID]]) {
-            responseCharacteristic = characteristic;
-            // Subscribe to notifications
-            [peripheral setNotifyValue:YES forCharacteristic:responseCharacteristic];
+        
+        if (isConnected && !shouldBeConnected) {
+            [flash disconnect];
+        } else if (!isConnected && shouldBeConnected) {
+            [flash connect];
+            connectedCount++;
         }
     }
-
-    if (requestCharacteristic != nil && responseCharacteristic != nil) {
-        // All set. We're now ready to send commands to the device.
-        self.status = NVFlashServiceReady;
-    } else {
-        // Characteristics not found. Abort.
-        [self disconnect];
-    }
 }
-
-- (void)             peripheral:(CBPeripheral *)peripheral
-didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic
-                          error:(NSError *)error
-{
-    if (activePeripheral != peripheral || ![characteristic.UUID isEqual:[CBUUID UUIDWithString:kResponseCharacteristicUUID]]) {
-        return;
-    }
-
-    NSString* response = [[NSString alloc] initWithData:characteristic.value encoding:NSASCIIStringEncoding];
-    //NSLog(@"<-- %@", response);
-    
-    uint8_t responseId;
-    if (!parseAck(response, &responseId)) {
-        //NSLog(@"Failed to parse response: %@", response);
-        [self disconnect];
-        return;
-    }
-    
-    if (awaitingAck == nil) {
-        //NSLog(@"Was not expecting ack (got: %u)", responseId);
-        [self disconnect];
-        return;
-    }
-
-    if (awaitingAck.requestId != responseId) {
-        //NSLog(@"Unexpected ack (got: %u, expected: %u)", responseId, awaitingAck.requestId);
-        [self disconnect];
-        return;
-    }
-    
-    //NSLog(@"<-- %@ [ACK]", frameMsg(awaitingAck.requestId, awaitingAck.msg));
-    
-    NVTriggerCallback callback = awaitingAck.callback;
-    
-    // No longer awaiting the ack.
-    awaitingAck = nil;
-
-    // Cancel timeout timer.
-    [ackTimer invalidate];
-    ackTimer = nil;
-
-    // Send any queued outbound messages.
-    [self processSendQueue];
-    
-    // Trigger user callback.
-    callback(YES);
-}
-
-- (void) disconnect
-{
-    if (activePeripheral != nil) {
-        [central cancelPeripheralConnection:activePeripheral];
-    }
-    
-    activePeripheral = nil;
-    requestCharacteristic = nil;
-    responseCharacteristic = nil;
-
-    [ackTimer invalidate];
-    ackTimer = nil;
-
-    // Abort any queued requests.
-    if (awaitingAck != nil) {
-        awaitingAck.callback(NO);
-        awaitingAck = nil;
-    }
-    for (NVCommand *cmd in awaitingSend) {
-        cmd.callback(NO);
-    }
-    [awaitingSend removeAllObjects];
-
-    self.status = NVFlashServiceIdle;
-}
-
-#pragma mark NVTriggerFlash flash control implementation
-
-- (bool) commandInProgress
-{
-    return awaitingAck != nil;
-}
-
-- (void) beginFlash:(NVFlashSettings*)settings
-{
-    [self beginFlash:settings withCallback:^(BOOL success) {}];
-}
-
-- (void) beginFlash:(NVFlashSettings*)settings withCallback:(NVTriggerCallback)callback
-{
-    if ((settings.warm == 0 && settings.cool == 0) || settings.timeout == 0) {
-        // settings say that flash is effectively off
-        [self request:offCmd() withCallback:callback];
-    } else {
-        [self request:lightCmd(settings.warm, settings.cool, settings.timeout) withCallback:callback];
-    }
-}
-
-- (void) endFlash
-{
-    [self endFlashWithCallback:^(BOOL success) {}];
-}
-
-- (void) endFlashWithCallback:(NVTriggerCallback)callback
-{
-    [self request:offCmd() withCallback:callback];
-}
-
-- (void) pingWithCallback:(NVTriggerCallback)callback
-{
-    [self request:pingCmd() withCallback:callback];
-}
-
-- (void) request:(NSString*)msg withCallback:(NVTriggerCallback)callback
-{
-    if (self.status != NVFlashServiceReady) {
-        callback(NO); // TODO: Async
-        return;
-    }
-
-    NVCommand* cmd = [NVCommand new];
-    cmd.requestId = nextRequestId++; // When nextRequestId (uint8_t) hits 255 it'll naturally wrap around back to 0.
-    cmd.msg = msg;
-    cmd.callback = callback;
-
-    [awaitingSend addObject:cmd];
-    [self processSendQueue];
-}
-
--(void) processSendQueue
-{
-    // If we're not waiting for anything to be acked, go ahead and send the next cmd in the outbound queue.
-    if (awaitingAck == nil && awaitingSend.count > 0) {
-        
-        // Shift first command from front of awaitingSend queue.
-        NVCommand* cmd = [awaitingSend objectAtIndex:0];
-        [awaitingSend removeObjectAtIndex:0];
-        
-        NSString* body = frameMsg(cmd.requestId, cmd.msg);
-        //NSLog(@"--> %@", body);
-        
-        // Write to device.
-        [activePeripheral writeValue:[body dataUsingEncoding:NSASCIIStringEncoding]
-                   forCharacteristic:requestCharacteristic
-                                type:CBCharacteristicWriteWithResponse];
-        
-        // Now we're waiting for this.
-        awaitingAck = cmd;
-        
-        // Set timer for acks so we don't hang forever waiting.
-        ackTimer = [NSTimer scheduledTimerWithTimeInterval:ackTimeout
-                                                    target:self
-                                                  selector:@selector(ackTookTooLong)
-                                                  userInfo:nil
-                                                   repeats:NO];
-
-    }
-}
-
-- (void)ackTookTooLong
-{
-    [ackTimer invalidate];
-    ackTimer = nil;
-    
-    if (awaitingAck != nil) {
-        //NSLog(@"Timeout waiting for %@ ack", frameMsg(awaitingAck.requestId, awaitingAck.msg));
-        awaitingAck.callback(NO);
-    }
-    
-    awaitingAck = nil;
-    [self processSendQueue];
-}
-
-NSString* frameMsg(uint8_t requestId, NSString *body)
-{
-    // Requests are framed "(xx:yy)" where xx is 2 digit hex requestId and yy is body string.
-    // e.g. "(00:P)"
-    //      "(4A:L,00,FF,05DC)"
-    return [NSString stringWithFormat:@"(%02X:%@)", requestId, body];
-}
-
-NSString *pingCmd()
-{
-    return @"P";
-}
-
-NSString* lightCmd(uint8_t warmPwm, uint8_t coolPwm, uint16_t timeoutMillis)
-{
-    // Light cmd is formatted "L,w,c,t" where w and c are warm/cool pwm duty cycles as 2 digit hex
-    // and t is 4 digit hex timeout.
-    // e.g. "L,00,FF,05DC" (means light with warm=0, cool=255, timeout=1500ms)
-    return [NSString stringWithFormat:@"L,%02X,%02X,%04X", warmPwm, coolPwm, timeoutMillis];
-}
-
-NSString* offCmd()
-{
-    return @"O";
-}
-
-bool parseAck(NSString *fullmsg, uint8_t* resultId)
-{
-    // Parses "(xx:A)" packet where xx is hex value for resultId.
-
-    NSError *regexError = nil;
-    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"\\(([0-9A-Za-z][0-9A-Za-z]):A\\)"
-                                                                           options:0
-                                                                             error:&regexError];
-    
-    NSRange range = NSMakeRange(0, [fullmsg length]);
-    NSArray *matches = [regex matchesInString:fullmsg options:0 range:range];
-    if (matches.count == 0) {
-        *resultId = 0;
-        return NO;
-    }
-    
-    unsigned scanned;
-    NSString *hex = [fullmsg substringWithRange:[[matches objectAtIndex:0] rangeAtIndex:1]];
-    [[NSScanner scannerWithString:hex] scanHexInt:(unsigned*)&scanned];
-    
-    *resultId = (uint8_t)scanned;
-    return YES;
-}
-
 @end

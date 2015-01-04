@@ -1,6 +1,6 @@
 //  The MIT License (MIT)
 //
-//  Copyright (c) 2013 Joe Walnes, Sneaky Squid LLC.
+//  Copyright (c) 2013-2015 Joe Walnes, Sneaky Squid LLC.
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -27,10 +27,10 @@ extern uint16_t const NV_DEFAULT_FLASH_TIMEOUT;
 @interface NVFlashSettings : NSObject
 
 // Set intensity of warm LEDs. Any value from 0-255, where 0=off and 255=max.
-@property (readonly) uint8_t warm;
+@property (nonatomic, readonly) uint8_t warm;
 
 // Set intensity of cool LEDs. Any value from 0-255, where 0=off and 255=max.
-@property (readonly) uint8_t cool;
+@property (nonatomic, readonly) uint8_t cool;
 
 // Time (in milliseconds) between beginFlash and endFlash that the flash hardware will wait
 // before automatically shutting off.
@@ -44,7 +44,7 @@ extern uint16_t const NV_DEFAULT_FLASH_TIMEOUT;
 // 2. For very short flashes (say < 10ms), it is more effictive to begin a flash with a
 //    timeout, than to explicitly end the flash. This should only be used for short flashes
 //    as the timer on the hardware is not very accurate (it can drift +/- 20%).
-@property (readonly) uint16_t timeout;
+@property (nonatomic, readonly) uint16_t timeout;
 
 // Constructor. Better to use the static helper functions.
 // e.g. [NVFlashSettings warm], [NVFlashSettings customWarm:123 cool:20], etc...

@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1227042A1A55F93D00A3264C /* NVFlash.m in Sources */ = {isa = PBXBuildFile; fileRef = 122704291A55F93D00A3264C /* NVFlash.m */; };
+		12981D711A58EF4200B10925 /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 12981D701A58EF4200B10925 /* CoreBluetooth.framework */; };
+		12B2636C1A2D058700C6B4F8 /* NVNovaV1Flash.m in Sources */ = {isa = PBXBuildFile; fileRef = 12B2636B1A2D058700C6B4F8 /* NVNovaV1Flash.m */; };
 		12B73F0C18A6E6B300BB65B9 /* NVFlashSettings.m in Sources */ = {isa = PBXBuildFile; fileRef = 12B73F0B18A6E6B300BB65B9 /* NVFlashSettings.m */; };
 		12C3421D18562B5500B48454 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 12C3421C18562B5500B48454 /* Foundation.framework */; };
 		12C3422E185689D200B48454 /* NVFlashService.m in Sources */ = {isa = PBXBuildFile; fileRef = 12C3422D185689D200B48454 /* NVFlashService.m */; };
@@ -25,12 +28,16 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		122704291A55F93D00A3264C /* NVFlash.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NVFlash.m; sourceTree = "<group>"; };
+		12981D701A58EF4200B10925 /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
+		12981D741A58F18700B10925 /* NovaSDK-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NovaSDK-Bridging-Header.h"; sourceTree = "<group>"; };
+		12B2636A1A2D058700C6B4F8 /* NVNovaV1Flash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NVNovaV1Flash.h; sourceTree = "<group>"; };
+		12B2636B1A2D058700C6B4F8 /* NVNovaV1Flash.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NVNovaV1Flash.m; sourceTree = "<group>"; };
 		12B73F0B18A6E6B300BB65B9 /* NVFlashSettings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NVFlashSettings.m; sourceTree = "<group>"; };
 		12C3421918562B5500B48454 /* libNovaSDK.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libNovaSDK.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		12C3421C18562B5500B48454 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		12C3422018562B5500B48454 /* NovaSDK-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NovaSDK-Prefix.pch"; sourceTree = "<group>"; };
-		12C3422A18563B1600B48454 /* NVFlashServiceStatus.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NVFlashServiceStatus.h; sourceTree = "<group>"; };
-		12C3422B18563B7E00B48454 /* NVTriggerFlash.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NVTriggerFlash.h; sourceTree = "<group>"; };
+		12C3422B18563B7E00B48454 /* NVFlash.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NVFlash.h; sourceTree = "<group>"; };
 		12C3422C185689D200B48454 /* NVFlashService.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NVFlashService.h; sourceTree = "<group>"; };
 		12C3422D185689D200B48454 /* NVFlashService.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NVFlashService.m; sourceTree = "<group>"; };
 		12C3422F18568E5800B48454 /* NVFlashSettings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NVFlashSettings.h; sourceTree = "<group>"; };
@@ -41,6 +48,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				12981D711A58EF4200B10925 /* CoreBluetooth.framework in Frameworks */,
 				12C3421D18562B5500B48454 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -68,6 +76,7 @@
 		12C3421B18562B5500B48454 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				12981D701A58EF4200B10925 /* CoreBluetooth.framework */,
 				12C3421C18562B5500B48454 /* Foundation.framework */,
 			);
 			name = Frameworks;
@@ -77,12 +86,15 @@
 			isa = PBXGroup;
 			children = (
 				12C3421F18562B5500B48454 /* Supporting Files */,
-				12C3422A18563B1600B48454 /* NVFlashServiceStatus.h */,
-				12C3422B18563B7E00B48454 /* NVTriggerFlash.h */,
+				12981D741A58F18700B10925 /* NovaSDK-Bridging-Header.h */,
+				12C3422B18563B7E00B48454 /* NVFlash.h */,
+				122704291A55F93D00A3264C /* NVFlash.m */,
 				12C3422C185689D200B48454 /* NVFlashService.h */,
 				12C3422D185689D200B48454 /* NVFlashService.m */,
 				12C3422F18568E5800B48454 /* NVFlashSettings.h */,
 				12B73F0B18A6E6B300BB65B9 /* NVFlashSettings.m */,
+				12B2636A1A2D058700C6B4F8 /* NVNovaV1Flash.h */,
+				12B2636B1A2D058700C6B4F8 /* NVNovaV1Flash.m */,
 			);
 			path = NovaSDK;
 			sourceTree = "<group>";
@@ -148,6 +160,8 @@
 			files = (
 				12C3422E185689D200B48454 /* NVFlashService.m in Sources */,
 				12B73F0C18A6E6B300BB65B9 /* NVFlashSettings.m in Sources */,
+				1227042A1A55F93D00A3264C /* NVFlash.m in Sources */,
+				12B2636C1A2D058700C6B4F8 /* NVNovaV1Flash.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -210,24 +224,33 @@
 		12C3422818562B5500B48454 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				DSTROOT = /tmp/NovaSDK.dst;
+				EMBEDDED_CONTENT_CONTAINS_SWIFT = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "NovaSDK/NovaSDK-Prefix.pch";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "NovaSDK/NovaSDK-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
 		12C3422918562B5500B48454 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				DSTROOT = /tmp/NovaSDK.dst;
+				EMBEDDED_CONTENT_CONTAINS_SWIFT = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "NovaSDK/NovaSDK-Prefix.pch";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "NovaSDK/NovaSDK-Bridging-Header.h";
 			};
 			name = Release;
 		};
