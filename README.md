@@ -1,6 +1,8 @@
 Nova iOS SDK
 ============
 
+![](http://cdn.photojojo.net/store/awesomeness/productImages/nova-wireless-phone-flash-e5fb.0000001402246485.gif)
+
 Official iOS SDK for [Nova Bluetooth iPhone flash](https://www.novaphotos.com).
 
 *This is version 2 of the SDK which has undergone [significant changes](CHANGES.md) from version 1.
@@ -517,4 +519,16 @@ For short bursts of light, it's often simpler to use a timeout on `NVFlashSettin
 Need help?
 ----------
 
-The Nova hardware and software was created by [Joe Walnes](https://twitter.com/joewalnes). For help email hello@novaphotos.com or raise a GitHub issue.
+The Nova hardware and software was created by [Joe Walnes](https://github.com/joewalnes). For help email hello@novaphotos.com or raise a GitHub issue.
+
+Links
+-----
+
+* [www.novaphotos.com](https://www.novaphotos.com)
+* [Nova Camera App on AppStore](https://itunes.apple.com/us/app/novacamera/id837854692) (uses this SDK)
+* [Where to buy](https://www.novaphotos.com/shop) (including Apple Store, Amazon, Photojojo...)
+* @joewalnes on [GitHub](https://github.com/joewalnes), [Twitter](https://twitter.com/joewalnes], [Medium](https://medium.com/@joewalnes)
+* [More Nova open source repositories](https://github.com/novaphotos) (including apps, Android SDK and protocol documentation)
+
+ 
+Photo by [Photojojo](http://photojojo.com/store/awesomeness/nova-wireless-phone-flash/)
