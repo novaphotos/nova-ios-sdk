@@ -1,9 +1,9 @@
 {
   "name": "NovaSDK",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "summary": "SDK to control Nova off-camera flash hardware.",
   "description": "Allow the Nova off-camera flash hardware to be controlled from your app.",
-  "homepage": "https://wantnova.com/sdk/",
+  "homepage": "https://github.com/novaphotos/nova-ios-sdk",
   "license": {
     "type": "MIT",
     "file": "LICENSE"
@@ -16,8 +16,8 @@
     "ios": "6.0"
   },
   "source": {
-    "git": "https://github.com/nova-device/nova-ios-sdk.git",
-    "tag": "1.0.0"
+    "git": "https://github.com/novaphotos/nova-ios-sdk.git",
+    "tag": "2.0.0"
   },
   "source_files": "NovaSDK/*.{h,m}",
   "frameworks": "CoreBluetooth",
