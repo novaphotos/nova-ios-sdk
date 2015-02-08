@@ -193,8 +193,8 @@ NSString *NVFlashServiceStatusString(NVFlashServiceStatus status)
 {
     if (context == statusUpdateContext) {
         id<NVFlash> flash = object;
-        NVFlashStatus oldStatus = [[change valueForKey:NSKeyValueChangeOldKey] integerValue];
-        NVFlashStatus newStatus = [[change valueForKey:NSKeyValueChangeNewKey] integerValue];
+        NVFlashStatus oldStatus = (NVFlashStatus) [[change valueForKey:NSKeyValueChangeOldKey] integerValue];
+        NVFlashStatus newStatus = (NVFlashStatus) [[change valueForKey:NSKeyValueChangeNewKey] integerValue];
         bool wasConnected = oldStatus == NVFlashReady || oldStatus == NVFlashBusy;
         bool isConnected = newStatus == NVFlashReady || newStatus == NVFlashBusy;
         if (wasConnected != isConnected) {
@@ -231,7 +231,7 @@ NSString *NVFlashServiceStatusString(NVFlashServiceStatus status)
     // Clear RSSI samples
     rssiSamples = [NSMutableDictionary dictionary];
     
-    NSDictionary *options = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber  numberWithBool:YES], CBCentralManagerScanOptionAllowDuplicatesKey, nil];
+    NSDictionary *options = @{CBCentralManagerScanOptionAllowDuplicatesKey : @YES};
     // Calls [self centralManager:didDiscoverPeripheral:advertisementData:RSSI:] when peripheral discovered.
     [central scanForPeripheralsWithServices: @[[CBUUID UUIDWithString:kNovaV1ServiceUUID]] options: options];
 
