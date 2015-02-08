@@ -52,6 +52,7 @@ static NSString* const kResponseCharacteristicUUID = @"FFF4";
     NVCommand *awaitingAck;
     NSTimer *ackTimer;
     NSTimer *rssiTimer;
+    NSTimer *flashTimeoutTimer;
     uint8_t nextRequestId;
     NSMutableArray *awaitingSend;
     NSString *_identifier;
@@ -151,7 +152,10 @@ static NSString* const kResponseCharacteristicUUID = @"FFF4";
     
     [rssiTimer invalidate];
     rssiTimer = nil;
-    
+
+    [flashTimeoutTimer invalidate];
+    flashTimeoutTimer = nil;
+
     // Abort any queued requests.
     if (awaitingAck != nil) {
         awaitingAck.callback(NO);
@@ -173,6 +177,9 @@ static NSString* const kResponseCharacteristicUUID = @"FFF4";
 
 - (void) beginFlash:(NVFlashSettings*)settings withCallback:(NVTriggerCallback)callback
 {
+    [flashTimeoutTimer invalidate];
+    flashTimeoutTimer = nil;
+
     if ((settings.warm == 0 && settings.cool == 0) || settings.timeout == 0) {
         // settings say that flash is effectively off
         self.lit = NO;
@@ -180,7 +187,14 @@ static NSString* const kResponseCharacteristicUUID = @"FFF4";
     } else {
         self.lit = YES;
         [self request:lightCmd(settings.warm, settings.cool, settings.timeout) withCallback:^(BOOL success) {
-            if(!success) {
+            if (success) {
+                double timeout = (double)settings.timeout / 1000.0;
+                flashTimeoutTimer = [NSTimer scheduledTimerWithTimeInterval:timeout
+                                                            target:self
+                                                          selector:@selector(flashTimeout)
+                                                          userInfo:nil
+                                                           repeats:NO];
+            } else {
                 self.lit = NO;
             }
             callback(success);
@@ -195,6 +209,9 @@ static NSString* const kResponseCharacteristicUUID = @"FFF4";
 
 - (void) endFlashWithCallback:(NVTriggerCallback)callback
 {
+    [flashTimeoutTimer invalidate];
+    flashTimeoutTimer = nil;
+
     self.lit = NO;
     [self request:offCmd() withCallback:callback];
 }
@@ -202,6 +219,15 @@ static NSString* const kResponseCharacteristicUUID = @"FFF4";
 - (void) pingWithCallback:(NVTriggerCallback)callback
 {
     [self request:pingCmd() withCallback:callback];
+}
+
+
+- (void)flashTimeout
+{
+    [flashTimeoutTimer invalidate];
+    flashTimeoutTimer = nil;
+    NSLog(@"timeout");
+    self.lit = NO;
 }
 
 #pragma mark -
