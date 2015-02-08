@@ -391,31 +391,38 @@ didDisconnectPeripheral:(CBPeripheral *)peripheral
     }
     
     // Step 2: sort remaining flashes by signal strength
-    NSArray *sortedFlashes = [filteredFlashes sortedArrayUsingDescriptors:[NSArray arrayWithObject:
-                                                                           [NSSortDescriptor sortDescriptorWithKey: @"signalStrength"
-                                                                                                         ascending: NO]]];
+    NSArray *sortedFlashes = [filteredFlashes sortedArrayUsingDescriptors:@[[NSSortDescriptor sortDescriptorWithKey:@"signalStrength"
+                                                                                                          ascending:NO]]];
 
-    // Step 3: iterate through filtered sorted flashes...
+    // Step 3: disconnect any that should no longer be connected
     int connectedCount = 0;
     for (id<NVFlash> flash in sortedFlashes) {
-    
-        bool shouldBeConnected = connectedCount < self.autoConnectMaxFlashes
-            && flash.signalStrength >= self.autoConnectMinSignalStrength
-            && (self.autoConnectWhitelist == nil || self.autoConnectWhitelist.count == 0 || [self.autoConnectWhitelist containsObject:flash.identifier])
-            && (self.autoConnectBlacklist == nil || ![self.autoConnectBlacklist containsObject:flash.identifier]);
-
-        // Is flash already connected?
         bool isConnected = flash.status == NVFlashConnecting || flash.status == NVFlashReady || flash.status == NVFlashBusy;
-        
         if (isConnected) {
-            connectedCount++;
+            bool shouldStillBeConnected = connectedCount < self.autoConnectMaxFlashes
+                && flash.signalStrength >= self.autoConnectMinSignalStrength
+                && (self.autoConnectWhitelist == nil || self.autoConnectWhitelist.count == 0 || [self.autoConnectWhitelist containsObject:flash.identifier])
+                && (self.autoConnectBlacklist == nil || ![self.autoConnectBlacklist containsObject:flash.identifier]);
+            if (shouldStillBeConnected) {
+                connectedCount++;
+            } else {
+                [flash disconnect];
+            }
         }
-        
-        if (isConnected && !shouldBeConnected) {
-            [flash disconnect];
-        } else if (!isConnected && shouldBeConnected) {
-            [flash connect];
-            connectedCount++;
+    }
+
+    // Step 4: if connectedCount not met, connect some more
+    for (id<NVFlash> flash in sortedFlashes) {
+        bool isConnected = flash.status == NVFlashConnecting || flash.status == NVFlashReady || flash.status == NVFlashBusy;
+        if (!isConnected) {
+            bool shouldBeConnected = connectedCount < self.autoConnectMaxFlashes
+                    && flash.signalStrength >= self.autoConnectMinSignalStrength
+                    && (self.autoConnectWhitelist == nil || self.autoConnectWhitelist.count == 0 || [self.autoConnectWhitelist containsObject:flash.identifier])
+                    && (self.autoConnectBlacklist == nil || ![self.autoConnectBlacklist containsObject:flash.identifier]);
+            if (shouldBeConnected) {
+                [flash connect];
+                connectedCount++;
+            }
         }
     }
 }
