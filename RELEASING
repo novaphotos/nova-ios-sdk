@@ -1,6 +1,6 @@
 To release a new version:
 
-* git tag 1.x.x
+* git tag 2.x.x
 * git push --tags
 * Update NovaSDK.podspec.json with new version (s.version and s.source)
 * pod trunk push NovaSDK.podspec.json
