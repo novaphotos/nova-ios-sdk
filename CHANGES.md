@@ -1,3 +1,15 @@
+# 2.0.1
+
+Released 2015-02-08
+
+Fixes:
+
+- In auto-pairing mode, remain connected to current hardware device so long
+  as it's within the minimum signal strength threshold
+
+- NVFlash.lit will revert to false when flash timeout occurs on hardware
+
+
 # 2.0.0
 
 Released 2015-01-04
