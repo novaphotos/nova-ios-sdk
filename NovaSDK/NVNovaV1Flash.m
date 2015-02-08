@@ -226,7 +226,6 @@ static NSString* const kResponseCharacteristicUUID = @"FFF4";
 {
     [flashTimeoutTimer invalidate];
     flashTimeoutTimer = nil;
-    NSLog(@"timeout");
     self.lit = NO;
 }
 
