@@ -247,7 +247,7 @@ didDiscoverServices:(NSError *)error
                                                 repeats: YES];
    
     for (CBService* service in peripheral.services) {
-        if ([service.UUID.UUIDString isEqualToString:kNovaV1ServiceUUID]) {
+        if ([service.UUID isEqual:[CBUUID UUIDWithString:kNovaV1ServiceUUID]]) {
             // Found Nova service
             // Discovers the characteristics for the service
             // Calls [self peripheral:didDiscoverCharacteristicsForService:error:]
@@ -255,7 +255,7 @@ didDiscoverServices:(NSError *)error
                                          [CBUUID UUIDWithString:kResponseCharacteristicUUID]];
             [peripheral discoverCharacteristics:characteristics forService:service];
         }
-        if ([service.UUID.UUIDString isEqualToString:kDeviceInformationServiceUUID]) {
+        if ([service.UUID isEqual:[CBUUID UUIDWithString:kDeviceInformationServiceUUID]]) {
             // Found device information service
             // Discovers the characteristics for the service
             // Calls [self peripheral:didDiscoverCharacteristicsForService:error:]
@@ -270,8 +270,8 @@ didDiscoverServices:(NSError *)error
 didDiscoverCharacteristicsForService:(CBService *)service
                                error:(NSError *)error
 {
-    if (![service.UUID.UUIDString isEqualToString:kNovaV1ServiceUUID]
-        && ![service.UUID.UUIDString isEqualToString:kDeviceInformationServiceUUID]) {
+    if (![service.UUID isEqual:[CBUUID UUIDWithString:kNovaV1ServiceUUID]]
+        && ![service.UUID isEqual:[CBUUID UUIDWithString:kDeviceInformationServiceUUID]]) {
         return;
     }
     
@@ -297,7 +297,7 @@ didDiscoverCharacteristicsForService:(CBService *)service
     if (requestCharacteristic != nil && responseCharacteristic != nil) {
         // All set. We're now ready to send commands to the device.
         self.status = NVFlashReady;
-    } else if ([service.UUID.UUIDString isEqualToString:kNovaV1ServiceUUID]) {
+    } else if ([service.UUID isEqual:[CBUUID UUIDWithString:kNovaV1ServiceUUID]]) {
         // Characteristics not found in NovaV1 service. Abort.
         [self disconnect];
     }
